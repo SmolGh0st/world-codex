@@ -459,6 +459,20 @@
      with #fsDot / #fsLabel). In the cloud there is no folder to connect - the
      thing you connect is your account - so repurpose it as a sign-in button.
      Cloning the node drops the tool's own connectFolder handler. */
+  /* The tool title in the top-left should always go home. In the deployed
+     layout the library's link points at a page that doesn't exist, and most
+     tools have no link at all. */
+  function fixBrandLink() {
+    const brand = document.querySelector(".brand");
+    if (!brand) return;
+    const inTools = /\/Tools\//i.test(location.pathname);
+    const home = inTools ? "../index.html" : "index.html";
+    const go = (e) => { e.preventDefault(); location.href = home; };
+    if (brand.tagName === "A") brand.setAttribute("href", home);
+    else { brand.style.cursor = "pointer"; brand.addEventListener("click", go); }
+    brand.title = "Back to the dashboard";
+  }
+
   function restyleAuthUI(signedIn) {
     const goApp = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } location.href = APP_URL; };
     const btn = document.getElementById("btnConnect");
@@ -665,6 +679,7 @@
     setTimeout(rewriteText, 1200);
     setTimeout(rewriteText, 3000);
     toolStrip();
+    fixBrandLink();
     mobileRepairs();
     showTutorial();
   }

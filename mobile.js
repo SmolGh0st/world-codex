@@ -136,9 +136,15 @@ main{grid-template-columns:1fr !important}
   padding-bottom:calc(80px + ${SAFE});
 }
 body.m-nav #list{transform:none}
+/* The zoom bar lives bottom-left, exactly where the Characters button sits.
+   Lift it clear, pad for the home bar, and make the buttons finger-sized. */
+.zoombar{bottom:calc(74px + ${SAFE}) !important;left:14px !important}
+.zoombar button{min-width:42px;min-height:42px;font-size:19px}
+.legend{bottom:calc(14px + ${SAFE}) !important;max-width:46vw}
 `);
     scrim(() => document.body.classList.remove("m-nav"));
     fab("☰ Characters", "left", () => document.body.classList.toggle("m-nav"));
+    pinchZoom("tree");
   }
 
   /* ----------------------------------------------------------- world map
@@ -146,8 +152,14 @@ body.m-nav #list{transform:none}
      for the same corner. Tuck it behind the map's own help instead.       */
   if (page === "world-map.html") {
     addCss(`
-#legend{display:none !important}
+#legend{display:none}
+body.m-key #legend{display:block;bottom:calc(74px + ${SAFE});right:12px;max-width:74vw}
+.zoombar{bottom:calc(14px + ${SAFE}) !important}
+.zoombar button{min-width:42px;min-height:42px;font-size:19px}
 `);
+    const key = fab("Key", "right", () => document.body.classList.toggle("m-key"));
+    key.style.bottom = `calc(16px + ${SAFE})`;
+    pinchZoom("map");
   }
 
   /* --------------------------------------------------------------- writer
@@ -155,6 +167,33 @@ body.m-nav #list{transform:none}
      fixed bar instead.                                                    */
   if (page === "character-writer.html") {
     stickySave();
+  }
+
+  /* Two-finger pinch on the canvas tools. Their zoom lives behind a wheel
+     handler, so translate the pinch into the wheel events they understand -
+     all of the tool's own zoom maths and limits keep working. */
+  function pinchZoom(svgId) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+    let d0 = 0;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const mid = (t) => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+    svg.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) { d0 = dist(e.touches); e.preventDefault(); }
+    }, { passive: false });
+    svg.addEventListener("touchmove", (e) => {
+      if (e.touches.length !== 2 || !d0) return;
+      e.preventDefault();
+      const d1 = dist(e.touches);
+      if (Math.abs(d1 - d0) < 8) return;
+      const m = mid(e.touches);
+      svg.dispatchEvent(new WheelEvent("wheel", {
+        deltaY: d1 > d0 ? -1 : 1, clientX: m.x, clientY: m.y,
+        bubbles: true, cancelable: true,
+      }));
+      d0 = d1;
+    }, { passive: false });
+    svg.addEventListener("touchend", () => { d0 = 0; });
   }
 
   /* A fixed bottom bar whose Save proxies the tool's own #btnSave, so all
