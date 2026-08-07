@@ -21,7 +21,7 @@
 
   const CFG = window.CDB_CONFIG || {};
   const SLUG = CFG.slug || "character-database";
-  const ROOT_NAME = "Character Database";
+  let ROOT_NAME = "Your World";   // replaced by the world's real name on load
   const ART_PREFIX = "Art/";
   const ART_BASE = CFG.artBase || "./art/";   // read-only fallback: the copy published with the static site
   const APP_URL = CFG.appUrl || "app.html";
@@ -194,6 +194,7 @@
     const world = Array.isArray(w) ? w[0] : w;
     if (!world || !world.id) throw new Error("could not get or create your world");
     WORLD_ID = world.id;
+    if (world.name) { ROOT_NAME = world.name; TREE.name = world.name; }
 
     const rows = await rest("files?select=path,content&deleted_at=is.null&world_id=eq." + WORLD_ID);
     for (const r of rows) { CONTENT.set(r.path, r.content); addFile(r.path); }
@@ -357,7 +358,9 @@
     const full = (name) => (prefix ? prefix + "/" + name : name);
     const h = {
       kind: "directory",
-      name: node.name,
+      // A getter, not a snapshot: the root is created before the world loads,
+      // and its name becomes the world's name once we know it.
+      get name() { return node.name; },
       async queryPermission() { return "granted"; },
       async requestPermission() { return "granted"; },
       async isSameEntry(other) { return other && other.name === node.name; },
@@ -476,6 +479,89 @@
     }
   }
 
+  /* ------------------------------------------------------- cloud wording
+     The tools were written for a folder on disk and their fixed text says so
+     ("connect the folder", "reads and writes the markdown in this folder").
+     In the cloud that's wrong and confusing, so rewrite the known phrases at
+     runtime. The tool files themselves stay untouched. */
+  const REWRITES = [
+    ["Connect the folder to see what's here and what still needs writing.",
+     "You're signed in, so it's all live - every change saves to the cloud."],
+    ["Everything reads and writes the markdown in this folder - nothing lives inside the tools.",
+     "Everything reads and writes your world in the cloud - nothing lives inside the tools."],
+    ["Connect your Character Database folder above to see the board.",
+     "Art added to a character shows up here."],
+    ["Connect your Character Database folder above, then start typing.",
+     "Start typing - it searches every entry in your world."],
+    ["No folder remembered yet.",
+     "Signed in - your world loads by itself."],
+    ["Change folder", "Account"],
+    ["folder not connected", "loading your world..."],
+    ["connect folder", "loading your world..."],
+  ];
+  // Source HTML wraps sentences across lines, so match any run of whitespace
+  // where the phrase has a space.
+  const REWRITE_RES = REWRITES.map(([from, to]) => [
+    new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+"), "g"), to,
+  ]);
+  function rewriteText(rootEl) {
+    const walker = document.createTreeWalker(rootEl || document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = walker.nextNode())) {
+      let t = n.nodeValue;
+      if (!t || t.length < 4) continue;
+      for (const [re, to] of REWRITE_RES) t = t.replace(re, to);
+      if (t !== n.nodeValue) n.nodeValue = t;
+    }
+  }
+
+  /* ----------------------------------------------------- first-run intros
+     One short card per tool, shown once, remembered in localStorage. */
+  const TUTORIALS = {
+    "index.html": ["Welcome to your codex",
+      "This is home base: counts, recent edits, and the open questions scattered through your world. The ☰ menu jumps between tools. Everything you change anywhere saves straight to the cloud."],
+    "library.html": ["The Library",
+      "Read everything in one place. Pick an entry on the left; the coloured links inside pages jump between them. Reading only - editing lives in the Writer."],
+    "character-writer.html": ["The Writer",
+      "Create and edit entries with a guided form. Tags, places and people suggest themselves from what already exists, so spellings stay connected. Save writes to the cloud."],
+    "search.html": ["Search",
+      "One box across every file in your world - names, tags, and the text inside entries."],
+    "timeline.html": ["The Timeline",
+      "World events and character lifespans on one line, drawn from the born, died and timeline fields on your entries. Nothing here to break - it just reads."],
+    "manuscript.html": ["The Manuscript desk",
+      "Read and draft chapters. The ⑂ Branch button forks a story into an alternate universe from whatever chapter you're on, copying everything up to that point."],
+    "art-board.html": ["The Art Board",
+      "Every character's reference art in one place. Images you add are stored privately with your world in the cloud."],
+    "family-tree.html": ["The Family Tree",
+      "Relationships drawn as a tree. Use the filters to trace ancestors or descendants, and the warning icon to find contradictions. Save writes changes back."],
+    "world-map.html": ["The World Map",
+      "Your locations and the routes between them. Drag places to arrange them, drag one onto another to connect them. Save writes it back."],
+  };
+  function showTutorial() {
+    const page = (location.pathname.split("/").pop() || "index.html");
+    const tut = TUTORIALS[page];
+    if (!tut) return;
+    const key = "cdb-tut-" + page;
+    if (localStorage.getItem(key)) return;
+    const wrap = document.createElement("div");
+    wrap.id = "cdbTut";
+    wrap.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);" +
+      "display:grid;place-items:center;padding:20px;";
+    wrap.innerHTML =
+      '<div style="max-width:400px;background:#1d1b26;color:#e9e5f2;border:1px solid #3a3550;' +
+      'border-radius:14px;padding:22px 22px 18px;font:15px/1.55 system-ui,sans-serif;' +
+      'box-shadow:0 18px 50px rgba(0,0,0,.5)">' +
+      '<div style="font-size:18px;font-weight:600;margin-bottom:8px">' + tut[0] + "</div>" +
+      '<div style="color:#b7b0cc">' + tut[1] + "</div>" +
+      '<button id="cdbTutOk" style="margin-top:16px;background:#a78bdb;color:#17141f;border:0;' +
+      'border-radius:8px;padding:8px 18px;font:600 14px system-ui;cursor:pointer">Got it</button>' +
+      "</div>";
+    document.body.appendChild(wrap);
+    const done = () => { localStorage.setItem(key, "1"); wrap.remove(); };
+    wrap.querySelector("#cdbTutOk").onclick = done;
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) done(); });
+  }
+
   function banner(msg, kind) {
     let el = document.getElementById("cdbCloudBanner");
     if (!el) {
@@ -500,6 +586,7 @@
       const next = encodeURIComponent(location.pathname.split("/").pop() + location.hash);
       banner('Not signed in. <a style="color:#fff" href="' + APP_URL + '?next=' + next + '">Sign in</a> to load your world.', "err");
       restyleAuthUI(false);
+      rewriteText();
       return;
     }
     try {
@@ -521,6 +608,11 @@
     restyleAuthUI(true);
     const b = document.getElementById("cdbCloudBanner");
     if (b) b.remove();
+    rewriteText();
+    // some empty states render only after the tool finishes indexing
+    setTimeout(rewriteText, 1200);
+    setTimeout(rewriteText, 3000);
+    showTutorial();
   }
 
   if (document.readyState === "loading") {

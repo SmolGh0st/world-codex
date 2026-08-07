@@ -254,7 +254,7 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
 <div id="shell">
   <div id="top">
     <button id="burger" class="btn sm">☰</button>
-    <h1>CODEX</h1>
+    <h1 id="worldName" title="Click to rename your world" style="cursor:pointer">CODEX</h1>
     <input id="q" placeholder="Search everything…">
     <span class="sp"></span>
     <button id="newBtn" class="btn sm">+ New</button>
@@ -938,9 +938,12 @@ function factsHtml(e) {
 function renderEntry() {
   const main = $("#main");
   if (!S.current) {
-    main.innerHTML = `<div class="wrap"><div class="ehead"><h1>Codex</h1></div>
-      <p class="sub">${S.index.filter((e)=>!e.deleted).length} entries. Pick one on the left, or make a new one.</p>
-      <p class="hint">Everything you change here saves straight to the database.</p></div>`;
+    const n = S.index.filter((e) => !e.deleted).length;
+    main.innerHTML = `<div class="wrap"><div class="ehead"><h1>${escapeHtml(S.worldName || "Your world")}</h1></div>
+      <p class="sub">${n === 0
+        ? "A blank world. Hit <b>+ New</b> up top to create your first character, place, or story."
+        : n + " entries. Pick one on the left, or make a new one."}</p>
+      <p class="hint">Everything you change here saves straight to the cloud. Click the world's name up top to rename it.</p></div>`;
     return;
   }
   const e = entryFor(S.current);
@@ -1414,6 +1417,8 @@ async function loadWorld() {
   const w = Array.isArray(r.data) ? r.data[0] : r.data;
   if (!w || !w.id) throw new Error("Could not get or create your world.");
   S.worldId = w.id;
+  S.worldName = w.name || "My World";
+  $("#worldName").textContent = S.worldName;
   const { data: files, error: fe } = await sb
     .from("files").select("path,content,deleted_at").eq("world_id", S.worldId);
   if (fe) throw fe;
@@ -1437,6 +1442,7 @@ async function boot() {
   S.current = S.files.has(hash) ? hash : null;
   renderSidebar();
   renderEntry();
+  maybeTour();
 }
 
 /* -------------------------------------------------------------- wiring */
@@ -1461,6 +1467,57 @@ $("#outBtn").onclick = async () => {
   location.reload();
 };
 $("#newBtn").onclick = newEntry;
+$("#worldName").onclick = () => {
+  if (!S.worldId) return;
+  $("#modal").innerHTML = `<div class="card">
+    <h1>Rename your world</h1>
+    <p>Shown at the top of every tool. The web address doesn't change.</p>
+    <input id="wnInput" class="inp" value="${escapeHtml(S.worldName || "")}" maxlength="60">
+    <div style="height:12px"></div>
+    <div class="badges"><button class="btn p" id="wnSave">Save</button>
+      <button class="btn" id="wnCancel">Cancel</button></div>
+    <div class="msg" id="wnMsg"></div>
+  </div>`;
+  $("#modal").classList.add("on");
+  const inp = $("#wnInput");
+  inp.focus(); inp.select();
+  $("#wnCancel").onclick = () => $("#modal").classList.remove("on");
+  const save = async () => {
+    const name = inp.value.trim();
+    if (!name) return ($("#wnMsg").textContent = "Give it a name.");
+    const { error } = await sb.from("worlds").update({ name }).eq("id", S.worldId);
+    if (error) return ($("#wnMsg").textContent = error.message);
+    S.worldName = name;
+    $("#worldName").textContent = name;
+    $("#modal").classList.remove("on");
+    if (!S.current) renderEntry();
+    toast("Renamed");
+  };
+  $("#wnSave").onclick = save;
+  inp.onkeydown = (e) => { if (e.key === "Enter") save(); };
+};
+
+/* First visit: a short tour of the app itself. */
+function maybeTour() {
+  if (localStorage.getItem("cdb-tut-app")) return;
+  $("#modal").innerHTML = `<div class="card">
+    <h1>Welcome${S.worldName ? " to " + escapeHtml(S.worldName) : ""}</h1>
+    <p style="margin-bottom:10px">This is your worldbuilding codex. The short version:</p>
+    <ul style="margin:0 0 14px;padding-left:20px;color:var(--dim);font-size:15px;line-height:1.7">
+      <li><b style="color:var(--ink)">Sidebar</b> - everything you've made, grouped by kind. Search up top.</li>
+      <li><b style="color:var(--ink)">+ New</b> - create characters, places, factions, stories, chapters, events.</li>
+      <li><b style="color:var(--ink)">Edit</b> - on any entry; fields suggest tags and links from what exists.</li>
+      <li><b style="color:var(--ink)">Tools</b> - timeline, family tree, world map and more live under /codex/.</li>
+    </ul>
+    <p class="hint" style="margin-bottom:12px">Everything saves to the cloud the moment you hit Save. Only you can see your world.</p>
+    <button class="btn p" id="tourOk">Got it</button>
+  </div>`;
+  $("#modal").classList.add("on");
+  $("#tourOk").onclick = () => {
+    localStorage.setItem("cdb-tut-app", "1");
+    $("#modal").classList.remove("on");
+  };
+}
 $("#themeBtn").onclick = () => {
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
