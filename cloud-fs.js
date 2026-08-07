@@ -568,6 +568,46 @@
     else document.body.insertBefore(strip, document.body.firstChild);
   }
 
+  /* ------------------------------------------------------- mobile repairs
+     The tools were laid out for a desktop. Two concrete phone problems:
+     1. Headers refuse to wrap, so buttons fall off the right edge.
+     2. Two-pane tools (library, manuscript) stack their panes, so tapping an
+        entry renders it below a full screen of list - it looks like nothing
+        happened. Scroll to the content when a list item is tapped.        */
+  function mobileRepairs() {
+    const css = document.createElement("style");
+    css.textContent = `
+@media (max-width: 820px){
+  header{flex-wrap:wrap !important;row-gap:6px}
+  #navScrim{left:0 !important;width:100% !important;max-width:100vw !important}
+  img,svg,canvas,video{max-width:100%}
+  input,select,textarea{font-size:16px !important} /* stops iOS zoom-on-focus */
+}`;
+    document.head.appendChild(css);
+
+    if (window.innerWidth > 820) return;
+    const pairs = [
+      ["#side", "#view"],          // library
+      ["#sidebar", "main"],        // manuscript
+    ];
+    for (const [sideSel, mainSel] of pairs) {
+      const side = document.querySelector(sideSel);
+      const main = document.querySelector(mainSel);
+      if (!side || !main) continue;
+      side.addEventListener("click", (e) => {
+        const hit = e.target.closest("a,li,button,[data-rel],[data-path]");
+        if (!hit || hit.closest("input")) return;
+        // let the tool render first, then bring the content into view
+        setTimeout(() => {
+          const r = main.getBoundingClientRect();
+          if (r.height > 60 && (r.top > window.innerHeight * 0.7 || r.top < 0)) {
+            main.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 250);
+      });
+    }
+  }
+
   function showTutorial() {
     const page = (location.pathname.split("/").pop() || "index.html");
     const tut = TUTORIALS[page];
@@ -644,6 +684,7 @@
     setTimeout(rewriteText, 1200);
     setTimeout(rewriteText, 3000);
     toolStrip();
+    mobileRepairs();
     showTutorial();
   }
 
