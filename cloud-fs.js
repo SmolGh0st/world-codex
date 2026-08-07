@@ -537,6 +537,37 @@
     "world-map.html": ["The World Map",
       "Your locations and the routes between them. Drag places to arrange them, drag one onto another to connect them. Save writes it back."],
   };
+  /* On the dashboard the tool cards live far down the page - fine on a big
+     screen, invisible on a phone. Put a scrollable strip of them up top. */
+  function toolStrip() {
+    const page = (location.pathname.split("/").pop() || "index.html");
+    if (page !== "index.html") return;
+    if (document.getElementById("cdbStrip")) return;
+    const TOOLS = [
+      ["Editor", APP_URL],
+      ["Writer", "Tools/character-writer.html"],
+      ["Library", "Tools/library.html"],
+      ["Search", "Tools/search.html"],
+      ["Timeline", "Tools/timeline.html"],
+      ["Manuscript", "Tools/manuscript.html"],
+      ["Art board", "Tools/art-board.html"],
+      ["Family tree", "Tools/family-tree.html"],
+      ["World map", "Tools/world-map.html"],
+    ];
+    const strip = document.createElement("nav");
+    strip.id = "cdbStrip";
+    strip.setAttribute("aria-label", "Tools");
+    strip.style.cssText = "display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;" +
+      "padding:10px 14px;scrollbar-width:none;";
+    strip.innerHTML = TOOLS.map(([label, href]) =>
+      '<a href="' + href + '" style="flex:0 0 auto;padding:7px 14px;border-radius:99px;' +
+      "border:1px solid rgba(140,125,180,.45);color:inherit;text-decoration:none;" +
+      'font:13.5px system-ui,sans-serif;white-space:nowrap;opacity:.92">' + label + "</a>").join("");
+    const header = document.querySelector("header");
+    if (header && header.parentNode) header.parentNode.insertBefore(strip, header.nextSibling);
+    else document.body.insertBefore(strip, document.body.firstChild);
+  }
+
   function showTutorial() {
     const page = (location.pathname.split("/").pop() || "index.html");
     const tut = TUTORIALS[page];
@@ -612,6 +643,7 @@
     // some empty states render only after the tool finishes indexing
     setTimeout(rewriteText, 1200);
     setTimeout(rewriteText, 3000);
+    toolStrip();
     showTutorial();
   }
 
