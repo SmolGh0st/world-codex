@@ -176,10 +176,26 @@ body.m-key #legend{display:block;bottom:calc(74px + ${SAFE});right:12px;max-widt
     const svg = document.getElementById(svgId);
     if (!svg) return;
     let d0 = 0;
+    let pinching = false;
     const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
     const mid = (t) => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+
+    // The tool's own single-finger pan listens on this same svg for
+    // pointerdown/pointermove. The moment a second finger lands it fires its
+    // own pointerdown too, which resets the pan's anchor to that finger -
+    // then every pointermove from either finger yanks the view toward
+    // whichever one moved last, which reads as the zoom center "flicking"
+    // between fingers. Block touch-driven pointer events from ever reaching
+    // that pan handler for the whole two-finger gesture so only our wheel-
+    // based zoom (using the true midpoint) drives the view.
+    const blockPan = (e) => {
+      if (pinching && e.pointerType === "touch") e.stopPropagation();
+    };
+    document.addEventListener("pointerdown", blockPan, true);
+    document.addEventListener("pointermove", blockPan, true);
+
     svg.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 2) { d0 = dist(e.touches); e.preventDefault(); }
+      if (e.touches.length === 2) { d0 = dist(e.touches); pinching = true; e.preventDefault(); }
     }, { passive: false });
     svg.addEventListener("touchmove", (e) => {
       if (e.touches.length !== 2 || !d0) return;
@@ -193,7 +209,13 @@ body.m-key #legend{display:block;bottom:calc(74px + ${SAFE});right:12px;max-widt
       }));
       d0 = d1;
     }, { passive: false });
-    svg.addEventListener("touchend", () => { d0 = 0; });
+    // Stay blocked until every finger lifts, not just back down to one -
+    // otherwise the remaining finger's pan resumes from a stale anchor and
+    // the view jumps once more on the way out of the gesture.
+    svg.addEventListener("touchend", (e) => {
+      if (e.touches.length === 0) { d0 = 0; pinching = false; }
+    });
+    svg.addEventListener("touchcancel", () => { d0 = 0; pinching = false; });
   }
 
   /* A fixed bottom bar whose Save proxies the tool's own #btnSave, so all
