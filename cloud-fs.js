@@ -456,6 +456,30 @@
     return ROOT;
   }
 
+  /* Every tool in the suite has the same connect-folder button (#btnConnect,
+     with #fsDot / #fsLabel). In the cloud there is no folder to connect - the
+     thing you connect is your account - so repurpose it as a sign-in button.
+     Cloning the node drops the tool's own connectFolder handler. */
+  function restyleAuthUI(signedIn) {
+    const goApp = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } location.href = APP_URL; };
+    const btn = document.getElementById("btnConnect");
+    if (btn) {
+      const clone = btn.cloneNode(true);
+      btn.parentNode.replaceChild(clone, btn);
+      clone.addEventListener("click", goApp);
+      // Some tools keep the label inside the button; others give the button
+      // its own text. Only relabel the ones that do.
+      if (!clone.querySelector("#fsLabel")) clone.textContent = signedIn ? "Account" : "Sign in";
+      clone.title = signedIn ? "Signed in - manage your account" : "Sign in to load your world";
+    }
+    if (!signedIn) {
+      const label = document.getElementById("fsLabel");
+      const dot = document.getElementById("fsDot");
+      if (label) { label.textContent = "Sign in"; label.style.cursor = "pointer"; label.onclick = goApp; }
+      if (dot) dot.className = "dot warn";
+    }
+  }
+
   function banner(msg, kind) {
     let el = document.getElementById("cdbCloudBanner");
     if (!el) {
@@ -475,6 +499,7 @@
     if (!session) {
       const next = encodeURIComponent(location.pathname.split("/").pop() + location.hash);
       banner('Not signed in. <a style="color:#fff" href="' + APP_URL + '?next=' + next + '">Sign in</a> to load your world.', "err");
+      restyleAuthUI(false);
       return;
     }
     try {
@@ -493,6 +518,7 @@
     } else {
       console.warn("[cloud-fs] this page has no useFolder(); showDirectoryPicker still works");
     }
+    restyleAuthUI(true);
     const b = document.getElementById("cdbCloudBanner");
     if (b) b.remove();
   }
