@@ -241,7 +241,9 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
 <div id="login">
   <div class="card">
     <h1>Codex</h1>
-    <p>Sign in to read and edit your world. We email you a link - no password.</p>
+    <p>Sign in to read and edit your world. We email you a link - no password.
+    First time here? The same box creates your account, and you start with a
+    fresh world of your own.</p>
     <input id="email" class="inp" type="email" placeholder="you@example.com" autocomplete="email">
     <div style="height:10px"></div>
     <button id="sendLink" class="btn p" style="width:100%">Email me a sign-in link</button>
@@ -1405,16 +1407,13 @@ function closeDrawer() { $("#side").classList.remove("open"); $("#scrim").classL
 
 /* ------------------------------------------------------------------ boot */
 async function loadWorld() {
-  let { data: worlds, error } = await sb.from("worlds").select("id,slug").eq("slug", WORLD_SLUG);
-  if (error) throw error;
-  if (!worlds || !worlds.length) {
-    const r = await sb.rpc("claim_world", { p_slug: WORLD_SLUG });
-    if (r.error) throw r.error;
-    if (!r.data) throw new Error("This world already belongs to another account.");
-    S.worldId = r.data;
-  } else {
-    S.worldId = worlds[0].id;
-  }
+  // One call does everything: returns your world, claims the seeded one on
+  // the very first sign-in, or creates a fresh empty world for a new account.
+  const r = await sb.rpc("my_world");
+  if (r.error) throw r.error;
+  const w = Array.isArray(r.data) ? r.data[0] : r.data;
+  if (!w || !w.id) throw new Error("Could not get or create your world.");
+  S.worldId = w.id;
   const { data: files, error: fe } = await sb
     .from("files").select("path,content,deleted_at").eq("world_id", S.worldId);
   if (fe) throw fe;

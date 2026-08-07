@@ -188,24 +188,20 @@
   async function loadAll() {
     if (expired()) await refresh();
 
-    let worlds = await rest("worlds?select=id&slug=eq." + encodeURIComponent(SLUG));
-    if (!worlds.length) {
-      const claimed = await rest("rpc/claim_world", {
-        method: "POST", body: JSON.stringify({ p_slug: SLUG }),
-      });
-      if (!claimed) throw new Error("This world belongs to a different account.");
-      WORLD_ID = claimed;
-    } else {
-      WORLD_ID = worlds[0].id;
-    }
+    // Returns your world, claims the original seeded one on first-ever
+    // sign-in, or creates a fresh empty world for a brand-new account.
+    const w = await rest("rpc/my_world", { method: "POST", body: "{}" });
+    const world = Array.isArray(w) ? w[0] : w;
+    if (!world || !world.id) throw new Error("could not get or create your world");
+    WORLD_ID = world.id;
 
     const rows = await rest("files?select=path,content&deleted_at=is.null&world_id=eq." + WORLD_ID);
     for (const r of rows) { CONTENT.set(r.path, r.content); addFile(r.path); }
 
     // Art lives in object storage; list it so the tools can see the folder.
     try {
-      const listed = await listStorage("");
-      for (const key of listed) addFile(ART_PREFIX + key);
+      const listed = await listStorage(WORLD_ID);
+      for (const key of listed) addFile(ART_PREFIX + key.slice(WORLD_ID.length + 1));
     } catch (e) {
       console.warn("[cloud-fs] could not list art bucket:", e.message);
     }
@@ -239,7 +235,7 @@
     const key = path.slice(ART_PREFIX.length);
     let blob = null;
     try {
-      const r = await fetch(STORAGE + "object/art/" + key.split("/").map(encodeURIComponent).join("/"),
+      const r = await fetch(STORAGE + "object/art/" + WORLD_ID + "/" + key.split("/").map(encodeURIComponent).join("/"),
         { headers: authHeaders() });
       if (r.ok) blob = await r.blob();
     } catch (e) { /* fall through */ }
@@ -256,13 +252,13 @@
 
   async function writeArt(path, blob) {
     const key = path.slice(ART_PREFIX.length);
-    const r = await fetch(STORAGE + "object/art/" + key.split("/").map(encodeURIComponent).join("/"), {
+    const r = await fetch(STORAGE + "object/art/" + WORLD_ID + "/" + key.split("/").map(encodeURIComponent).join("/"), {
       method: "POST",
       headers: Object.assign({ "x-upsert": "true" }, authHeaders()),
       body: blob,
     });
     if (!r.ok && r.status !== 200) {
-      const put = await fetch(STORAGE + "object/art/" + key.split("/").map(encodeURIComponent).join("/"), {
+      const put = await fetch(STORAGE + "object/art/" + WORLD_ID + "/" + key.split("/").map(encodeURIComponent).join("/"), {
         method: "PUT", headers: authHeaders(), body: blob,
       });
       if (!put.ok) throw new Error("art upload failed: " + put.status);
@@ -299,7 +295,7 @@
   async function deletePath(path) {
     if (path.startsWith(ART_PREFIX)) {
       const key = path.slice(ART_PREFIX.length);
-      await fetch(STORAGE + "object/art/" + key.split("/").map(encodeURIComponent).join("/"),
+      await fetch(STORAGE + "object/art/" + WORLD_ID + "/" + key.split("/").map(encodeURIComponent).join("/"),
         { method: "DELETE", headers: authHeaders() });
       BLOBS.delete(path);
     } else {
