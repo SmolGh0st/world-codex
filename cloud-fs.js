@@ -485,8 +485,12 @@
     if (!el) {
       el = document.createElement("div");
       el.id = "cdbCloudBanner";
-      el.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:9999;padding:9px 14px;" +
-        "font:14px/1.4 system-ui,sans-serif;text-align:center;";
+      // Bottom of the screen, not the top - the tools keep their own header
+      // up there, and on a phone a top banner sits exactly on the sign-in
+      // button it is pointing at.
+      el.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:9999;" +
+        "padding:10px 14px calc(10px + env(safe-area-inset-bottom));" +
+        "font:14px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 -4px 16px rgba(0,0,0,.35);";
       document.body.appendChild(el);
     }
     el.style.background = kind === "err" ? "#7a2b2b" : "#2b4a7a";
