@@ -476,6 +476,10 @@
       const dot = document.getElementById("fsDot");
       if (label) { label.textContent = "Sign in"; label.style.cursor = "pointer"; label.onclick = goApp; }
       if (dot) dot.className = "dot warn";
+    } else {
+      // Any folder-era label a tool left behind becomes the world's name.
+      const label = document.getElementById("fsLabel");
+      if (label && /folder/i.test(label.textContent)) label.textContent = ROOT_NAME;
     }
   }
 
@@ -496,6 +500,7 @@
     ["No folder remembered yet.",
      "Signed in - your world loads by itself."],
     ["Change folder", "Account"],
+    ["change folder", "Account"],
     ["folder not connected", "loading your world..."],
     ["connect folder", "loading your world..."],
   ];
@@ -575,37 +580,13 @@
         entry renders it below a full screen of list - it looks like nothing
         happened. Scroll to the content when a list item is tapped.        */
   function mobileRepairs() {
-    const css = document.createElement("style");
-    css.textContent = `
-@media (max-width: 820px){
-  header{flex-wrap:wrap !important;row-gap:6px}
-  #navScrim{left:0 !important;width:100% !important;max-width:100vw !important}
-  img,svg,canvas,video{max-width:100%}
-  input,select,textarea{font-size:16px !important} /* stops iOS zoom-on-focus */
-}`;
-    document.head.appendChild(css);
-
+    // Phone layouts live in their own file so desktops never download them.
     if (window.innerWidth > 820) return;
-    const pairs = [
-      ["#side", "#view"],          // library
-      ["#sidebar", "main"],        // manuscript
-    ];
-    for (const [sideSel, mainSel] of pairs) {
-      const side = document.querySelector(sideSel);
-      const main = document.querySelector(mainSel);
-      if (!side || !main) continue;
-      side.addEventListener("click", (e) => {
-        const hit = e.target.closest("a,li,button,[data-rel],[data-path]");
-        if (!hit || hit.closest("input")) return;
-        // let the tool render first, then bring the content into view
-        setTimeout(() => {
-          const r = main.getBoundingClientRect();
-          if (r.height > 60 && (r.top > window.innerHeight * 0.7 || r.top < 0)) {
-            main.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 250);
-      });
-    }
+    const me = document.querySelector('script[src*="cloud-fs.js"]');
+    const src = me ? me.getAttribute("src").replace(/cloud-fs\.js.*$/, "mobile.js") : "mobile.js";
+    const s = document.createElement("script");
+    s.src = src;
+    document.head.appendChild(s);
   }
 
   function showTutorial() {
