@@ -221,17 +221,21 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
 @media (max-width:820px){
   #body{grid-template-columns:1fr}
   #side{
-    position:fixed;top:49px;bottom:0;left:0;width:min(300px,84vw);z-index:50;
+    position:fixed;top:0;bottom:0;left:0;width:min(300px,84vw);z-index:50;
     transform:translateX(-102%);transition:transform .18s;
-    box-shadow:0 0 30px rgba(0,0,0,.45);
+    box-shadow:0 0 30px rgba(0,0,0,.45);padding-top:14px;
   }
   #side.open{transform:none}
   #burger{display:inline-block}
-  #q{width:auto;flex:1;min-width:0}
+  /* Buttons on the first row, search on its own full-width second row -
+     otherwise they overlap and taps land on the wrong control. */
+  #top{flex-wrap:wrap;row-gap:8px}
+  #q{flex:1 1 100%;order:9;width:auto;min-width:0}
   #top h1{display:none}
+  .btn.sm{min-height:38px;min-width:38px}
   .wrap{padding:16px 14px}
   .ehead h1{font-size:25px}
-  #scrim{position:fixed;inset:49px 0 0;background:rgba(0,0,0,.45);z-index:45;display:none}
+  #scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:45;display:none}
   #scrim.on{display:block}
 }
 </style>
@@ -241,12 +245,19 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
 <div id="login">
   <div class="card">
     <h1>Codex</h1>
-    <p>Sign in to read and edit your world. We email you a link - no password.
-    First time here? The same box creates your account, and you start with a
-    fresh world of your own.</p>
+    <p>Sign in with your email and password. First time here? Pick a password
+    and hit Create account - no confirmation email, you're in immediately,
+    with a fresh world of your own.</p>
     <input id="email" class="inp" type="email" placeholder="you@example.com" autocomplete="email">
+    <div style="height:8px"></div>
+    <input id="pw" class="inp" type="password" placeholder="password (8+ characters)" autocomplete="current-password">
     <div style="height:10px"></div>
-    <button id="sendLink" class="btn p" style="width:100%">Email me a sign-in link</button>
+    <div style="display:flex;gap:8px">
+      <button id="signIn" class="btn p" style="flex:1">Sign in</button>
+      <button id="signUp" class="btn" style="flex:1">Create account</button>
+    </div>
+    <div style="height:10px"></div>
+    <button id="sendLink" class="btn sm" style="width:100%;opacity:.8">Email me a sign-in link instead</button>
     <div id="loginMsg" class="msg"></div>
   </div>
 </div>
@@ -259,6 +270,7 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
     <span class="sp"></span>
     <a id="toolsBtn" class="btn sm" href="codex/index.html" style="text-decoration:none" title="Timeline, map, family tree and more">Tools</a>
     <button id="newBtn" class="btn sm">+ New</button>
+    <button id="pwBtn" class="btn sm" title="Set or change your password">⚿</button>
     <button id="themeBtn" class="btn sm" title="Light / dark">◐</button>
     <button id="outBtn" class="btn sm" title="Sign out">⏻</button>
   </div>
@@ -1447,20 +1459,44 @@ async function boot() {
 }
 
 /* -------------------------------------------------------------- wiring */
-$("#sendLink").onclick = async () => {
+const loginMsg = (cls, text) => { const m = $("#loginMsg"); m.className = "msg " + cls; m.textContent = text; };
+function loginFields() {
   const email = $("#email").value.trim();
-  const msg = $("#loginMsg");
-  if (!email) { msg.className = "msg err"; msg.textContent = "Enter your email."; return; }
-  msg.className = "msg"; msg.textContent = "Sending…";
+  const pw = $("#pw").value;
+  if (!email) { loginMsg("err", "Enter your email."); return null; }
+  return { email, pw };
+}
+$("#signIn").onclick = async () => {
+  const f = loginFields(); if (!f) return;
+  if (!f.pw) return loginMsg("err", "Enter your password - or use the email link below.");
+  loginMsg("", "Signing in…");
+  const { error } = await sb.auth.signInWithPassword({ email: f.email, password: f.pw });
+  if (error) {
+    // The account may predate passwords (magic-link era) or the password is
+    // simply wrong - Supabase reports both the same way. Say so honestly.
+    return loginMsg("err", error.message + " - if you made this account with an email link, sign in with the link once, then set a password from the key button up top.");
+  }
+};
+$("#signUp").onclick = async () => {
+  const f = loginFields(); if (!f) return;
+  if (!f.pw || f.pw.length < 8) return loginMsg("err", "Pick a password of at least 8 characters.");
+  loginMsg("", "Creating your account…");
+  const { data, error } = await sb.auth.signUp({ email: f.email, password: f.pw });
+  if (error) return loginMsg("err", error.message);
+  if (!data.session) return loginMsg("ok", "Account made - check your email to confirm, then sign in.");
+  // session present: confirmation is off, boot() fires via onAuthStateChange
+};
+$("#sendLink").onclick = async () => {
+  const f = loginFields(); if (!f) return;
+  loginMsg("", "Sending…");
   const { error } = await sb.auth.signInWithOtp({
-    email,
+    email: f.email,
     options: { emailRedirectTo: location.origin + location.pathname },
   });
-  if (error) { msg.className = "msg err"; msg.textContent = error.message; return; }
-  msg.className = "msg ok";
-  msg.textContent = "Check your email and click the link. You can close this tab.";
+  if (error) return loginMsg("err", error.message);
+  loginMsg("ok", "Check your email and click the link. You can close this tab.");
 };
-$("#email").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#sendLink").click(); });
+$("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#signIn").click(); });
 
 $("#outBtn").onclick = async () => {
   if (S.dirty && !confirm("You have unsaved changes. Sign out anyway?")) return;
@@ -1468,6 +1504,34 @@ $("#outBtn").onclick = async () => {
   location.reload();
 };
 $("#newBtn").onclick = newEntry;
+$("#pwBtn").onclick = () => {
+  $("#modal").innerHTML = `<div class="card">
+    <h1>Set your password</h1>
+    <p>From then on you sign in with email + password - no more waiting on
+    emails. This replaces any password you had before.</p>
+    <input id="npw" class="inp" type="password" placeholder="new password (8+ characters)" autocomplete="new-password">
+    <div style="height:8px"></div>
+    <input id="npw2" class="inp" type="password" placeholder="repeat it" autocomplete="new-password">
+    <div style="height:12px"></div>
+    <div class="badges"><button class="btn p" id="npwSave">Save password</button>
+      <button class="btn" id="npwCancel">Cancel</button></div>
+    <div class="msg" id="npwMsg"></div>
+  </div>`;
+  $("#modal").classList.add("on");
+  $("#npwCancel").onclick = () => $("#modal").classList.remove("on");
+  $("#npw").focus();
+  $("#npwSave").onclick = async () => {
+    const m = $("#npwMsg");
+    const a = $("#npw").value, b = $("#npw2").value;
+    if (a.length < 8) { m.className = "msg err"; m.textContent = "At least 8 characters."; return; }
+    if (a !== b) { m.className = "msg err"; m.textContent = "They don't match."; return; }
+    m.className = "msg"; m.textContent = "Saving…";
+    const { error } = await sb.auth.updateUser({ password: a });
+    if (error) { m.className = "msg err"; m.textContent = error.message; return; }
+    $("#modal").classList.remove("on");
+    toast("Password set");
+  };
+};
 $("#worldName").onclick = () => {
   if (!S.worldId) return;
   $("#modal").innerHTML = `<div class="card">
