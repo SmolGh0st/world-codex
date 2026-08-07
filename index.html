@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="field" data-face="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · World Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Grenze+Gotisch:wght@400;500&family=Grenze:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script>
+(function(){var r=document.documentElement;try{
+var look=localStorage.getItem('cdb-look');if(['field','atlas','board'].indexOf(look)<0)look='field';
+r.dataset.theme=look;
+var t=localStorage.getItem('cdb-theme');
+var dark=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+r.dataset.face=dark?'night':'day';}catch(e){}})();
+</script>
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="index.html">World Codex</a>
+  <nav><a href="index.html" class=active>Home</a><a href="search.html">Search</a></nav>
+  <div class="controls">
+    <select id="look" aria-label="Look">
+      <option value="field">Field &amp; Blade</option>
+      <option value="atlas">The Atlas</option>
+      <option value="board">The Guild Board</option>
+    </select>
+    <button id="face" aria-label="Dark or light">◐</button>
+  </div>
+</header>
+<main>
+<section class="hero"><h1>World Codex</h1><p class="dim">4 characters · 4 locations · 2 factions · 1 story · 4 chapters</p></section>
+<section><h2>Characters</h2><div class="grid"><a class="card" href="characters/arcy-ivory.html"><div class="noimg">A</div><h3>Arcy Ivory</h3><p class="card-tagline">&quot;The ends will justify the means.&quot;</p><p class="tags"><span class="tag status-sketched">sketched</span> <span class="tag">anti-villain</span> <span class="tag">assassin&#x27;s guild</span></p></a><a class="card" href="characters/cherri-ivory.html"><div class="noimg">C</div><h3>Cherri Ivory</h3><p class="card-tagline">Youngest sister of the Ivory family</p><p class="tags"><span class="tag status-sketched">sketched</span> <span class="tag">child</span></p></a><a class="card" href="characters/lorian-eros.html"><div class="noimg">L</div><h3>Lorian Eros</h3><p class="card-tagline">3rd Royal Prince of the kingdom</p><p class="tags"><span class="tag status-sketched">sketched</span> <span class="tag">royalty</span> <span class="tag">MC love interest</span></p></a><a class="card" href="characters/silver-mythrodak.html"><img src="art/silver-mythrodak/download.jpeg" alt="" loading="lazy"><h3>Silver Mythrodak</h3><p class="tags"><span class="tag status-developed">developed</span> <span class="tag">protagonist</span> <span class="tag">demi-human</span> <span class="tag">hero</span></p></a></div></section>
+<section><h2>Stories</h2><div class="grid"><a class="card story" href="stories/arcy.html"><h3>Arcy</h3><p class="card-tagline">Arcy&#x27;s backstory</p><p class="dim">4 chapters · 12 words</p><span class="tag universe">main timeline</span><p class="tags"><span class="tag status-outlined">outlined</span></p></a></div></section>
+<section><h2>The World</h2><div class="region"><h3><span class="dot" style="background:#7f77dd"></span>The Capital Territories</h3><ul><li><a href="locations/amphora.html">Amphora</a> <span class="dim">- The royal capital of the nation, where Eros royal family lives.</span></li></ul></div><div class="region"><h3><span class="dot" style="background:#ba7517"></span>The Heartland</h3><ul><li><a href="locations/the-basement.html">The Basement</a> <span class="dim">- One of the Guild&#x27;s safehouses, under something dull.</span></li><li><a href="locations/vellhaven.html">Vellhaven</a> <span class="dim">- The market town where Arcy&#x27;s other life started.</span></li></ul></div><div class="region"><h3><span class="dot" style="background:#639922"></span>The Outskirts</h3><ul><li><a href="locations/ivory-farm.html">Ivory Farm</a> <span class="dim">- The ordinary life Arcy is tied to.</span></li></ul></div></section>
+<section><h2>Factions</h2><ul><li><a href="factions/assassins-guild.html">Assassin&#x27;s Guild</a> <span class="dim">- &quot;Client Confidentiality&quot;</span></li><li><a href="factions/royal-guard.html">Royal Guard</a> <span class="dim">- For the kingdom</span></li></ul></section>
+<section><h2>Recently updated</h2><ul><li><a href="characters/arcy-ivory.html">Arcy Ivory</a> <span class="dim">(character, 2026-08-01)</span></li><li><a href="characters/cherri-ivory.html">Cherri Ivory</a> <span class="dim">(character, 2026-08-01)</span></li><li><a href="characters/lorian-eros.html">Lorian Eros</a> <span class="dim">(character, 2026-08-01)</span></li><li><a href="characters/silver-mythrodak.html">Silver Mythrodak</a> <span class="dim">(character, 2026-08-01)</span></li><li><a href="stories/arcy/chapter-2-the-vellhaven-attempt.html">Chapter 2 - The Vellhaven Attempt</a> <span class="dim">(chapter, 2026-08-01)</span></li><li><a href="stories/arcy.html">Arcy</a> <span class="dim">(story, 2026-08-01)</span></li><li><a href="factions/royal-guard.html">Royal Guard</a> <span class="dim">(faction, 2026-08-01)</span></li><li><a href="locations/amphora.html">Amphora</a> <span class="dim">(location, 2026-08-01)</span></li></ul></section>
+</main>
+<footer class="site-foot">Generated from the Character Database on 2026-08-06. The markdown files are the source of truth.</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
