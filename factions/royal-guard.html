@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="field" data-face="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Royal Guard · World Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Grenze+Gotisch:wght@400;500&family=Grenze:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<script>
+(function(){var r=document.documentElement;try{
+var look=localStorage.getItem('cdb-look');if(['field','atlas','board'].indexOf(look)<0)look='field';
+r.dataset.theme=look;
+var t=localStorage.getItem('cdb-theme');
+var dark=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+r.dataset.face=dark?'night':'day';}catch(e){}})();
+</script>
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="../index.html">World Codex</a>
+  <nav><a href="../index.html" class=active>Home</a><a href="../search.html">Search</a></nav>
+  <div class="controls">
+    <select id="look" aria-label="Look">
+      <option value="field">Field &amp; Blade</option>
+      <option value="atlas">The Atlas</option>
+      <option value="board">The Guild Board</option>
+    </select>
+    <button id="face" aria-label="Dark or light">◐</button>
+  </div>
+</header>
+<main>
+<article class="entry type-faction">
+<p class="kicker">faction</p>
+<h1>Royal Guard</h1>
+<blockquote class="tagline">For the kingdom</blockquote>
+<p class="tags"><span class="tag status-seed">seed</span> <span class="tag">capital territories</span> <span class="tag">royalty</span></p>
+<aside class="facts"><dl><dt>Type</dt><dd>Order</dd><dt>Base</dt><dd><a href="../locations/amphora.html">Amphora</a></dd><dt>Allies</dt><dd><span class="chip"><span class="ghost" title="no entry yet">Royal Family</span></span></dd><dt>Enemies</dt><dd><span class="chip"><a href="assassins-guild.html">Assassin&#x27;s Guild</a></span></dd></dl></aside>
+<div class="body"><section><h2>What They Want</h2>
+<p>Their goal is to protect the kingdom, civilians, and the royal family.</p></section>
+<section><h2>How They Operate</h2>
+<p>They have a couple thousand members. Spread out across the whole kingdom, they keep watch over the whole kingdom's territories, spread out over many different posts, but centered in the capital. Long time rivalry with Assassin's Guild, always chasing after their tail but never catching them. Classic royal guard.</p></section>
+<section><h2>History</h2>
+<p>First founded by the first king's bodyguards, then expanded as they hired more and more people. It started in just Amphora- but soon expanded across the cities and territory.</p></section></div>
+<section class="backlinks"><h2>Mentioned in</h2><ul><li><a href="../locations/amphora.html">Amphora</a> <span class="dim">(location)</span></li></ul></section>
+<p class="meta">Last updated 2026-08-01</p>
+</article>
+</main>
+<footer class="site-foot">Generated from the Character Database on 2026-08-06. The markdown files are the source of truth.</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

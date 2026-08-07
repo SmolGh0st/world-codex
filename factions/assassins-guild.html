@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="field" data-face="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assassin&#x27;s Guild · World Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Grenze+Gotisch:wght@400;500&family=Grenze:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<script>
+(function(){var r=document.documentElement;try{
+var look=localStorage.getItem('cdb-look');if(['field','atlas','board'].indexOf(look)<0)look='field';
+r.dataset.theme=look;
+var t=localStorage.getItem('cdb-theme');
+var dark=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+r.dataset.face=dark?'night':'day';}catch(e){}})();
+</script>
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="../index.html">World Codex</a>
+  <nav><a href="../index.html" class=active>Home</a><a href="../search.html">Search</a></nav>
+  <div class="controls">
+    <select id="look" aria-label="Look">
+      <option value="field">Field &amp; Blade</option>
+      <option value="atlas">The Atlas</option>
+      <option value="board">The Guild Board</option>
+    </select>
+    <button id="face" aria-label="Dark or light">◐</button>
+  </div>
+</header>
+<main>
+<article class="entry type-faction">
+<p class="kicker">faction</p>
+<h1>Assassin&#x27;s Guild</h1>
+<blockquote class="tagline">"Client Confidentiality"</blockquote>
+<p class="tags"><span class="tag status-seed">seed</span> <span class="tag">assassin&#x27;s guild</span> <span class="tag">villain</span></p>
+<aside class="facts"><dl><dt>Type</dt><dd>Guild</dd><dt>Base</dt><dd><a href="../locations/the-basement.html">The Basement</a></dd><dt>Members</dt><dd><span class="chip"><a href="../characters/arcy-ivory.html">Arcy Ivory</a></span></dd></dl></aside>
+<div class="body"><section><h2>What They Want</h2>
+<p>Wants money more than anything. However, they are fiercely loyal to their members and clients, defending them with their lives.</p></section>
+<section><h2>How They Operate</h2>
+<p>Operates in secret, with no main hub or home base. Will work with little morals and will take hits on anyone except members of their own guild or allies. Anyone can be taken out, given the right price.</p></section>
+<section><h2>Members</h2>
+<table><thead><tr><th>Person</th><th>Rank / Role</th><th>Loyalty</th></tr></thead><tbody><tr><td><a href="../characters/arcy-ivory.html">Arcy Ivory</a></td><td>Member</td><td></td></tr></tbody></table></section>
+<section><h2>Open Questions</h2>
+<ul><li class="todo">☐ <code>base:</code> points at <a href="../locations/the-basement.html">The Basement</a>, but How They Operate says they keep no main hub. Currently reconciled by treating the Basement as one safehouse among several rather than a headquarters - confirm that reading, or pick a different one and clear the <code>base:</code> field.</li><li class="todo">☐ No leader recorded. Does the Guild have one, or is that deliberate?</li><li class="todo">☐ Were the assassins at <a href="../locations/vellhaven.html">Vellhaven</a> Guild members? Arcy's backstory says she ran with "the real assassins" and was recruited afterwards, which does not quite say they were the same organisation.</li></ul></section></div>
+<section class="backlinks"><h2>Mentioned in</h2><ul><li><a href="../stories/arcy.html">Arcy</a> <span class="dim">(story)</span></li><li><a href="../characters/arcy-ivory.html">Arcy Ivory</a> <span class="dim">(character)</span></li><li><a href="../stories/arcy/chapter-3-taken-in.html">Chapter 3 - Taken In</a> <span class="dim">(chapter)</span></li><li><a href="royal-guard.html">Royal Guard</a> <span class="dim">(faction)</span></li><li><a href="../locations/the-basement.html">The Basement</a> <span class="dim">(location)</span></li><li><a href="../locations/vellhaven.html">Vellhaven</a> <span class="dim">(location)</span></li></ul></section>
+<p class="meta">Last updated 2026-07-29</p>
+</article>
+</main>
+<footer class="site-foot">Generated from the Character Database on 2026-08-06. The markdown files are the source of truth.</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>
