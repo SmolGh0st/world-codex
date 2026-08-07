@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Map</title>
+<script>
+/* Shared with index.html, character-writer.html and family-tree.html: one
+   stored key, applied before first paint. No key at all means "follow the
+   system". */
+(function(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cdb-theme"); }catch(e){}
+  if(pref !== "light" && pref !== "dark") pref = null;
+  var dark = pref ? pref==="dark"
+                  : !window.matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  /* the look (colour family) rides a second shared key; field is the default */
+  var look = null;
+  try{ look = localStorage.getItem("cdb-look"); }catch(e){}
+  if(["atlas","board","iris","rose","slate"].indexOf(look) < 0) look = "field";
+  document.documentElement.dataset.look = look;
+})();
+</script>
+<style>
+  :root{
+    --bg:#14120f;
+    --panel:#1c1a16;
+    --panel-2:#232019;
+    --line:#332e25;
+    --line-soft:#28241d;
+    --ink:#ece4d6;
+    --ink-dim:#a99e8b;
+    --ink-faint:#6f665a;
+    --accent:#c9a227;
+    --accent-soft:#3a3018;
+    --accent-line:#4a3d1d;
+    --accent-hover:#dcb433;
+    --on-accent:#1a1508;
+    --btn-hover:#2a251b;
+    --danger:#c96a4a;
+    --danger-ink:#f0b7a4;
+    --ok:#7fa860;
+    --warnc:#c99a2e;
+    --canvas-glow:#191712;
+    --node-bg:#232019;
+    --node-ghost:#1b1915;
+    --node-line:#3a3428;
+    --node-line-focus:#8a7433;
+    --hair:#5b5348;
+    --quiet-ink:#8d8474;
+    --route:#8a7b57;
+    --route-oneway:#a06a4a;
+    --float:rgba(28,26,22,.93);
+    --shadow:rgba(0,0,0,.5);
+    --scrim:rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f3ea;
+    --panel:#fffdf8;
+    --panel-2:#efe9dc;
+    --line:#dbd1bd;
+    --line-soft:#e9e1d1;
+    --ink:#2a251c;
+    --ink-dim:#5d5548;
+    --ink-faint:#877d6d;
+    --accent:#8a6d10;
+    --accent-soft:#f2e7c2;
+    --accent-line:#d8c68a;
+    --accent-hover:#a1811d;
+    --on-accent:#fffdf6;
+    --btn-hover:#e7dfcf;
+    --danger:#a8431f;
+    --danger-ink:#8c3316;
+    --ok:#4e7233;
+    --warnc:#8a6d10;
+    --canvas-glow:#fffdf6;
+    --node-bg:#fffdf8;
+    --node-ghost:#f1ece0;
+    --node-line:#cdc2ab;
+    --node-line-focus:#b39528;
+    --hair:#b3a893;
+    --quiet-ink:#7a7162;
+    --route:#9c8c63;
+    --route-oneway:#b06a44;
+    --float:rgba(255,253,248,.94);
+    --shadow:rgba(60,50,30,.22);
+    --scrim:rgba(60,50,30,.35);
+    color-scheme:light;
+  }
+
+  /* ---------- looks ----------------------------------------------------
+     Three colour families shared by every tool, picked in the home page's
+     Settings (cdb-look). Field is the base palette above; Atlas and Board
+     override surfaces, accent and canvas. Route colours are semantic
+     (mutual vs one-way) and stay the same in every look. */
+  :root[data-look="atlas"]{
+    --bg:#111814; --panel:#19231d; --panel-2:#212d26;
+    --line:#35453b; --line-soft:#273229;
+    --ink:#e2dec9; --ink-dim:#a39d87; --ink-faint:#6e796e;
+    --accent:#4fb896; --accent-soft:#163529; --accent-line:#2b5546;
+    --accent-hover:#65cbaa; --on-accent:#062318; --btn-hover:#243128;
+    --warnc:#c2a25c;
+    --canvas-glow:#151d18; --node-bg:#19231d; --node-ghost:#141b16;
+    --node-line:#34443a; --node-line-focus:#3f8a70;
+    --hair:#586458; --quiet-ink:#899287; --float:rgba(25,35,29,.93);
+  }
+  :root[data-look="atlas"][data-theme="light"]{
+    --bg:#e7e7d8; --panel:#f4f4e8; --panel-2:#dfdfca;
+    --line:#c2c2a6; --line-soft:#d6d6c0;
+    --ink:#35322a; --ink-dim:#5e5947; --ink-faint:#83816b;
+    --accent:#1d6b58; --accent-soft:#d7eae1; --accent-line:#a6ccbd;
+    --accent-hover:#27816a; --on-accent:#f5fbf8; --btn-hover:#e5e5d2;
+    --warnc:#7c6410;
+    --canvas-glow:#f9f9f0; --node-bg:#f4f4e8; --node-ghost:#e6e6d4;
+    --node-line:#c4c4a8; --node-line-focus:#2c8a6d;
+    --hair:#a4a78c; --quiet-ink:#737e6c; --float:rgba(244,244,232,.94);
+    --shadow:rgba(55,65,50,.22); --scrim:rgba(55,65,50,.35);
+  }
+  :root[data-look="board"]{
+    --bg:#171310; --panel:#201a15; --panel-2:#2a2219;
+    --line:#3a2f24; --line-soft:#2b231c;
+    --ink:#e6dcc6; --ink-dim:#a69c85; --ink-faint:#786b57;
+    --accent:#b58f4a; --accent-soft:#372a15; --accent-line:#584421;
+    --accent-hover:#c8a35e; --on-accent:#251803; --btn-hover:#2f261d;
+    --warnc:#c0913b;
+    --canvas-glow:#1d1813; --node-bg:#201a15; --node-ghost:#1a1511;
+    --node-line:#3e3327; --node-line-focus:#8a6d33;
+    --hair:#605444; --quiet-ink:#968a72; --float:rgba(32,26,21,.93);
+  }
+  :root[data-look="board"][data-theme="light"]{
+    --bg:#e8dcc5; --panel:#f2e7d1; --panel-2:#dfd0b3;
+    --line:#c5af85; --line-soft:#d7c7a6;
+    --ink:#2e2822; --ink-dim:#5d5343; --ink-faint:#7c6e54;
+    --accent:#6e5624; --accent-soft:#ecdfbc; --accent-line:#cab383;
+    --accent-hover:#83682a; --on-accent:#fdf9ee; --btn-hover:#e7dabe;
+    --warnc:#7c5f14;
+    --canvas-glow:#f8eeda; --node-bg:#f2e7d1; --node-ghost:#e3d4b7;
+    --node-line:#c8b285; --node-line-focus:#96762a;
+    --hair:#a8946d; --quiet-ink:#7b6d50; --float:rgba(242,231,209,.94);
+    --shadow:rgba(70,55,30,.22); --scrim:rgba(70,55,30,.35);
+  }
+  :root[data-look="iris"]{
+    --bg:#151218; --panel:#1d1924; --panel-2:#262030;
+    --line:#383046; --line-soft:#2b2537;
+    --ink:#e8e2f0; --ink-dim:#a79fb6; --ink-faint:#6f6880;
+    --accent:#a78bdb; --accent-soft:#2c2344; --accent-line:#473a66;
+    --accent-hover:#baa2e8; --on-accent:#170f26; --btn-hover:#2a2438;
+  }
+  :root[data-look="iris"][data-theme="light"]{
+    --bg:#f2eef7; --panel:#fcfaff; --panel-2:#e7e0f0;
+    --line:#cfc3e0; --line-soft:#ded4ea;
+    --ink:#2b2438; --ink-dim:#5a5168; --ink-faint:#837a92;
+    --accent:#6b4fa8; --accent-soft:#e6dcf5; --accent-line:#c3aee3;
+    --accent-hover:#7d61bd; --on-accent:#f9f6ff; --btn-hover:#e3dbef;
+    --shadow:rgba(60,50,80,.18);
+  }
+  :root[data-look="rose"]{
+    --bg:#191214; --panel:#221a1d; --panel-2:#2c2226;
+    --line:#443037; --line-soft:#332529;
+    --ink:#eee0e4; --ink-dim:#b39ba3; --ink-faint:#7d6970;
+    --accent:#d4899b; --accent-soft:#3d222b; --accent-line:#5e3644;
+    --accent-hover:#e29fb0; --on-accent:#260f16; --btn-hover:#2f2529;
+  }
+  :root[data-look="rose"][data-theme="light"]{
+    --bg:#f7eef0; --panel:#fffafb; --panel-2:#f0e1e5;
+    --line:#ddc3ca; --line-soft:#ead5da;
+    --ink:#35262b; --ink-dim:#645057; --ink-faint:#8f7a81;
+    --accent:#a04360; --accent-soft:#f4dbe3; --accent-line:#dfadbd;
+    --accent-hover:#b55573; --on-accent:#fff7f9; --btn-hover:#eddde1;
+    --shadow:rgba(80,50,60,.18);
+  }
+  :root[data-look="slate"]{
+    --bg:#10141a; --panel:#171d26; --panel-2:#1f2733;
+    --line:#303c4d; --line-soft:#26303e;
+    --ink:#dde4ee; --ink-dim:#94a1b4; --ink-faint:#627082;
+    --accent:#6da7d8; --accent-soft:#16293c; --accent-line:#2a4a68;
+    --accent-hover:#85b9e4; --on-accent:#06131f; --btn-hover:#232d3a;
+  }
+  :root[data-look="slate"][data-theme="light"]{
+    --bg:#e9edf2; --panel:#f7f9fc; --panel-2:#dde4ec;
+    --line:#bcc8d6; --line-soft:#d2dae4;
+    --ink:#27303b; --ink-dim:#4f5b6a; --ink-faint:#77828f;
+    --accent:#2c6394; --accent-soft:#d9e7f3; --accent-line:#a5c4dd;
+    --accent-hover:#3a76ab; --on-accent:#f6fafd; --btn-hover:#dbe2ea;
+    --shadow:rgba(45,60,80,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden;
+  }
+  .serif{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif}
+
+  header{
+    display:flex;align-items:center;gap:9px;flex-wrap:nowrap;overflow:hidden;
+    padding:10px 16px;border-bottom:1px solid var(--line);
+    background:var(--panel);height:57px;
+  }
+  header .btn{flex:none;white-space:nowrap}
+  #btnUndo,#btnRedo{padding:7px 10px;font-size:16px;line-height:1}
+  .brand{font-weight:650;letter-spacing:.2px;white-space:nowrap;flex:none}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .grow{flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);display:inline-block;margin-right:7px}
+  .dot.on{background:var(--ok)}
+  .dot.warn{background:var(--warnc)}
+  #fsLabel{font-size:13px;color:var(--ink-dim)}
+
+  main{display:grid;grid-template-columns:1fr 330px;height:calc(100vh - 57px)}
+  @media (max-width:900px){main{grid-template-columns:1fr}#side{display:none}}
+
+  #canvasWrap{position:relative;overflow:hidden;background:
+    radial-gradient(circle at 26% 16%, var(--canvas-glow) 0%, var(--bg) 64%)}
+  svg#map{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+  svg#map.drag{cursor:grabbing}
+  svg#map.moving{cursor:grabbing}
+
+  g.node{cursor:pointer}
+  g.node rect.card{fill:var(--node-bg);stroke:var(--node-line);stroke-width:1.4}
+  g.node:hover rect.card{stroke:var(--node-line-focus)}
+  g.node.sel rect.card{stroke:var(--accent);stroke-width:2.4}
+  g.node.ghost rect.card{fill:var(--node-ghost);stroke-dasharray:4 4}
+  g.node.dropok rect.card{stroke:var(--accent);stroke-width:2.8}
+  g.node .nm{fill:var(--ink);font-weight:600;font-size:14px}
+  g.node.ghost .nm{fill:var(--quiet-ink);font-style:italic;font-weight:400}
+  g.node .sub{fill:var(--ink-faint);font-size:11.5px}
+  .regionHull{stroke-width:1.2;stroke-dasharray:2 5;cursor:pointer}
+  .regionHull:hover{stroke-dasharray:none}
+  .regionLabel{font-size:12px;letter-spacing:.4px;font-weight:600;text-transform:uppercase;cursor:pointer}
+  .route{stroke:var(--route);stroke-width:1.6;fill:none}
+  .route.oneway{stroke:var(--route-oneway);stroke-dasharray:6 4}
+
+  .zoombar{
+    position:absolute;left:14px;bottom:14px;display:flex;gap:6px;align-items:center;
+    background:var(--float);border:1px solid var(--line);border-radius:9px;padding:5px 7px;
+  }
+  .zoombar button{background:transparent;border:0;color:var(--ink-dim);cursor:pointer;font:inherit;padding:3px 8px;border-radius:6px}
+  .zoombar button:hover{background:var(--panel-2);color:var(--ink)}
+  #zoomLabel{font-size:12px;color:var(--ink-faint);min-width:42px;text-align:center}
+
+  .legend{
+    position:absolute;right:14px;bottom:14px;background:var(--float);border:1px solid var(--line);
+    border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--ink-faint);line-height:1.8;max-width:236px;
+  }
+  .legend b{color:var(--ink-dim);font-weight:600}
+  .legend i{display:inline-block;width:16px;height:0;border-top:2px solid var(--route);
+    vertical-align:middle;margin-right:6px}
+  .legend i.ow{border-top:2px dashed var(--route-oneway)}
+  .legend i.gh{width:14px;height:10px;border:1.4px dashed var(--hair);border-top:0;
+    border-radius:3px;margin-right:6px}
+
+  .viewbar{
+    position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+    background:var(--float);border:1px solid var(--line);border-radius:9px;
+    padding:5px 9px;font-size:12.5px;color:var(--ink-dim);z-index:4;max-width:calc(100% - 28px);
+  }
+  .vsep{width:1px;height:18px;background:var(--line)}
+  .chk{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+  .chk input{accent-color:var(--accent);cursor:pointer}
+  .linky{background:none;border:0;color:var(--ink-faint);cursor:pointer;font:inherit;
+    font-size:12.5px;text-decoration:underline;text-underline-offset:2px;padding:0}
+  .linky:hover{color:var(--accent)}
+  .btn.warn{border-color:var(--warnc);color:var(--warnc)}
+  .unsaved::after{content:" •";color:var(--accent)}
+
+  .blank{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:40px;color:var(--ink-faint);font-size:14px;line-height:1.7;
+  }
+  .blank div{max-width:440px}
+  .blank h2{font-family:ui-serif,Georgia,serif;font-weight:500;font-size:25px;color:var(--ink-dim);margin:0 0 10px}
+
+  #side{border-left:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:16px 16px 70px}
+  #side h3{margin:0 0 3px;font-family:ui-serif,Georgia,serif;font-weight:500;font-size:22px}
+  #side .meta{font-size:12.5px;color:var(--ink-faint);margin-bottom:8px}
+  #side .tagline{font-style:italic;color:var(--ink-dim);font-size:13.5px;line-height:1.5;
+    border-left:2px solid var(--accent-line);padding-left:10px;margin:0 0 14px}
+  #side .summary{font-size:13px;color:var(--ink-dim);line-height:1.6;margin:0 0 16px}
+  .sec{margin-bottom:20px}
+  .sec h4{margin:0 0 8px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--ink-dim);border-radius:7px;padding:4px 9px;margin:0 5px 5px 0;font-size:12.5px;cursor:pointer}
+  .chip:hover{border-color:var(--accent);color:var(--ink)}
+  .chip.miss{border-style:dashed;color:var(--quiet-ink);font-style:italic}
+  .chip .x{color:var(--ink-faint);font-size:14px;line-height:1;padding:0 1px;border-radius:4px}
+  .chip .x:hover{color:var(--danger)}
+  .empty{color:var(--ink-faint);font-size:13px;line-height:1.6;padding:6px 2px}
+  .side-note{font-size:12px;color:var(--ink-faint);line-height:1.5;margin:10px 0 0}
+
+  input[type=text],select,textarea{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;outline:none;color:inherit;font:inherit;transition:border-color .13s;
+  }
+  input:focus,select:focus{border-color:var(--accent)}
+  ::placeholder{color:var(--ink-faint)}
+  .btn{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer;font:inherit;transition:.13s}
+  .btn:hover{border-color:var(--accent);background:var(--btn-hover)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+  .btn.primary:hover{background:var(--accent-hover)}
+  .btn.sm{padding:4px 9px;font-size:13px;border-radius:6px}
+  .btn.full{width:100%}
+
+  /* ---------- floating layers: peek card, region editor, connect menu ---------- */
+  .pop{
+    position:fixed;z-index:70;background:var(--panel);border:1px solid var(--line);
+    border-radius:11px;padding:13px 15px;box-shadow:0 14px 34px var(--shadow);
+    width:290px;font-size:13px;color:var(--ink-dim);line-height:1.55;
+  }
+  .pop h5{margin:0 0 2px;font-family:ui-serif,Georgia,serif;font-weight:500;font-size:17px;color:var(--ink)}
+  .pop .kind{font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+  .pop .tl{font-style:italic;border-left:2px solid var(--accent-line);padding-left:9px;margin:0 0 8px;color:var(--ink-dim)}
+  .pop .bd{margin:0;max-height:150px;overflow:auto}
+  .pop .foot{margin-top:11px;display:flex;gap:7px;align-items:center}
+  .pop .foot a{color:var(--accent);font-size:12.5px;text-decoration:none}
+  .pop .foot a:hover{text-decoration:underline}
+  .pop .close{margin-left:auto;background:none;border:0;color:var(--ink-faint);cursor:pointer;font-size:16px;line-height:1}
+  .pop .close:hover{color:var(--danger)}
+  .pop .miss{color:var(--ink-faint);font-style:italic}
+  .pop .f{margin-bottom:11px}
+  .pop .f label{display:block;font-size:11px;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;margin-bottom:5px}
+
+  /* ---------- help bubbles ------------------------------------------------
+     A "?" beside anything whose meaning isn't obvious from its label. Click
+     for a popover; Esc or a click elsewhere closes it. Same pattern and look
+     as the other tools'. */
+  .helpbub{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:15px;height:15px;margin-left:5px;padding:0;flex:none;
+    border-radius:50%;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--ink-faint);font:700 10.5px/1 inherit;letter-spacing:0;
+    cursor:pointer;vertical-align:middle;text-transform:none;
+  }
+  .helpbub:hover,.helpbub:focus{border-color:var(--accent);color:var(--accent);outline:none}
+  .helppop{
+    position:fixed;z-index:200;max-width:290px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;box-shadow:0 14px 34px var(--shadow);
+    font:400 12.5px/1.55 inherit;color:var(--ink-dim);
+    letter-spacing:0;text-transform:none;text-align:left;
+  }
+  .swatches{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .sw{width:24px;height:24px;border-radius:6px;border:2px solid transparent;cursor:pointer;padding:0}
+  .sw:hover{border-color:var(--ink-faint)}
+  .sw.on{border-color:var(--ink)}
+  .sw.auto{background:var(--panel-2);border:1px dashed var(--line);color:var(--ink-faint);
+    font-size:9px;display:flex;align-items:center;justify-content:center}
+  .sw.auto.on{border:2px solid var(--ink)}
+  .rowb{display:flex;gap:7px;align-items:center;margin-top:12px}
+  .rowb .grow{flex:1}
+  .pop .opt{
+    display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;
+    border:1px solid transparent;color:var(--ink-dim);padding:7px 9px;border-radius:7px;
+    cursor:pointer;font:inherit;font-size:13.5px;
+  }
+  .pop .opt:hover{background:var(--panel-2);color:var(--ink);border-color:var(--line)}
+  .pop .opt .gl{margin-left:auto;font-size:12px;color:var(--ink-faint)}
+  .pop .cancel{width:100%;margin-top:6px;font-size:12.5px;color:var(--ink-faint);
+    background:none;border:0;cursor:pointer;padding:4px}
+  .pop .cancel:hover{color:var(--danger)}
+  .pop .mhead{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--ink-faint);margin:0 0 5px 2px}
+
+  #toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:9px 16px;
+    opacity:0;pointer-events:none;transition:.18s;z-index:80;max-width:80vw;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #toast.err{border-color:var(--danger);color:var(--danger-ink)}
+  #toast .undo{
+    margin-left:12px;background:var(--panel);border:1px solid var(--line);color:var(--accent);
+    border-radius:6px;padding:3px 10px;cursor:pointer;font:inherit;font-size:13px;
+  }
+  #toast .undo:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+  dialog{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;
+    padding:22px 24px;max-width:600px;font:inherit;
+  }
+  dialog::backdrop{background:var(--scrim)}
+  dialog h3{margin:0 0 10px;font-family:ui-serif,Georgia,serif;font-weight:500;font-size:21px}
+  dialog p,dialog li{font-size:13.5px;color:var(--ink-dim);line-height:1.65}
+  dialog code{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;font-size:12.5px}
+  #warnBody h4{margin:16px 0 7px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600}
+  #warnBody h4:first-child{margin-top:4px}
+  .warnrow{display:flex;gap:10px;align-items:flex-start;padding:7px 0;
+    border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--ink-dim);line-height:1.5}
+  .warnrow span{flex:1}
+  .warnrow b{color:var(--ink);font-weight:600}
+  .warnrow .btn{flex:none;white-space:nowrap}
+  .warn-none{color:var(--ink-faint);font-size:13px}
+
+  /* ---------- tool nav drawer ---------------------------------------------
+     The three-line button at the far left of every header opens the same
+     list of every tool, so you can move between them without going via the
+     home page. Identical markup, CSS and behaviour in all of them; the tool
+     you're already in is marked and not a link.
+
+     The list is duplicated per file rather than shared, because these pages
+     are deliberately standalone - no build step, no common runtime. Adding a
+     tool later means one line in each NAV_TOOLS array. */
+  .navbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:32px;flex:none;border-radius:8px;cursor:pointer;
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:0;transition:.13s;
+  }
+  .navbtn span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:1px}
+  .navbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .navbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #navScrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .16s;
+  }
+  #navScrim.open{opacity:1;pointer-events:auto}
+  #navDrawer{
+    position:fixed;top:0;left:0;bottom:0;width:248px;z-index:301;
+    background:var(--panel);border-right:1px solid var(--line);
+    box-shadow:0 0 40px var(--shadow);
+    transform:translateX(-101%);transition:transform .18s ease;
+    display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;
+  }
+  #navDrawer.open{transform:none}
+  #navDrawer h2{
+    margin:2px 8px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  #navDrawer a,#navDrawer span.navhere{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+    color:var(--ink);font-size:14px;text-decoration:none;
+  }
+  #navDrawer a:hover{background:var(--btn-hover);text-decoration:none;color:var(--ink)}
+  #navDrawer a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  #navDrawer span.navhere{background:var(--accent-soft);font-weight:600}
+  #navDrawer .g{width:20px;text-align:center;color:var(--accent);font-size:15px;flex:none}
+  #navDrawer .navfoot{
+    margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line-soft);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5;
+  }
+  @media (prefers-reduced-motion:reduce){
+    #navDrawer,#navScrim{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="navbtn" id="btnNav" title="All tools" aria-label="All tools"><span></span><span></span><span></span></button>
+  <div class="brand">World Map<small>character database</small></div>
+  <button class="btn" id="btnConnect"><span class="dot" id="fsDot"></span><span id="fsLabel">connect folder</span></button>
+  <button class="btn" id="btnReload" title="Re-read the files from disk">Reload</button>
+  <div class="grow"></div>
+  <span id="fileLabel" style="font-size:13px;color:var(--ink-faint);flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0"></span>
+  <button class="btn" id="btnUndo" title="Undo (Ctrl+Z)" disabled>↶</button>
+  <button class="btn" id="btnRedo" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
+  <button class="btn" id="btnDiscard" title="Throw away every unsaved change" disabled>Discard</button>
+  <button class="btn primary" id="btnSave" disabled>Save changes</button>
+  <button class="btn" id="btnWarn" title="Things worth a look">⚠</button>
+  <button class="btn" id="btnExport">Export SVG</button>
+  <button class="btn" id="btnTheme" title="Light / dark" aria-label="Light or dark">☾</button>
+  <button class="btn" id="btnHelp">?</button>
+</header>
+
+<main>
+  <div id="canvasWrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M2 2L8 5L2 8" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <g id="viewport"></g>
+    </svg>
+
+    <div class="viewbar">
+      <label class="chk"><input type="checkbox" id="chkRegions" checked> region clusters</label>
+      <span class="vsep"></span>
+      <label class="chk"><input type="checkbox" id="chkGhosts" checked> unwritten places</label>
+      <span class="vsep"></span>
+      <button class="linky" id="btnRelayout" title="Forget saved pins and auto-arrange everything">re-arrange</button>
+    </div>
+
+    <div class="blank" id="blank">
+      <div>
+        <h2 class="serif">No map yet</h2>
+        Connect the <b>Character Database</b> folder, and every file in
+        <code>World/Locations/</code> becomes a node here - grouped by its
+        <code>region:</code>, joined by its <code>connections:</code>.
+        Nothing to draw by hand; it reads the files.
+      </div>
+    </div>
+
+    <div class="zoombar">
+      <button id="zOut">−</button><span id="zoomLabel">100%</span><button id="zIn">+</button>
+      <button id="zFit">fit</button>
+    </div>
+
+    <div class="legend" id="legend">
+      <div><i></i> route (both ways)</div>
+      <div><i class="ow"></i> one-way only</div>
+      <div><i class="gh"></i> place with no file yet</div>
+      <div style="margin-top:5px;border-top:1px solid var(--line-soft);padding-top:5px">
+        Drag a node onto another to <b>connect</b> ·
+        click a region to <b>rename or recolour</b></div>
+    </div>
+  </div>
+
+  <div id="side">
+    <p class="empty">Click a location to see what it connects to.</p>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<dialog id="warn">
+  <h3 class="serif">Things worth a look</h3>
+  <div id="warnBody"></div>
+  <p style="text-align:right;margin-top:16px"><button class="btn" onclick="warn.close()">Close</button></p>
+</dialog>
+
+<dialog id="help">
+  <h3 class="serif">How this works</h3>
+  <p><b>Reading.</b> Every <code>.md</code> in <code>World/Locations/</code> becomes a node,
+  grouped by <code>region:</code> and joined by <code>connections:</code>. Region names and
+  colours come from <code>World/Regions.md</code>.</p>
+  <p><b>Moving.</b> Drag a node to reposition it, then <b>Save</b> - that writes
+  <code>map_x:</code> / <code>map_y:</code> into the file and <i>pins</i> it there while
+  everything else keeps auto-arranging. <b>Re-arrange</b> clears every pin. This is the
+  roadmap's upgrade path: the same fields would pin these nodes onto drawn map art later.</p>
+  <p><b>Connecting.</b> Drag one node <i>on top of</i> another and a menu asks how to route
+  them - both ways, or one-way in either direction. Both files get the
+  <code>connections:</code> entry. Remove a route with the <b>×</b> on any connection chip in
+  the sidebar, or add a missing return route with <b>↩</b>.</p>
+  <p><b>Regions.</b> Click a region's tinted area or its label to rename it or change its
+  colour. Renaming rewrites <code>region:</code> in every location inside it. Colour is one hex
+  per region, stored in <code>World/Regions.md</code> - the map derives a readable fill, border
+  and label from it for both dark and light themes, so you only ever pick one value. A region
+  with no colour set gets a stable automatic one derived from its name.</p>
+  <p><b>Unwritten places.</b> A <code>connections:</code> entry naming a place with no file
+  shows as a dashed ghost node. Select it and press <b>Create this location</b> to make a real
+  <code>seed</code> file, in the right region and already linked back.</p>
+  <p><b>Factions and characters</b> in the sidebar open a small card in place rather than
+  navigating away, so you never lose your position on the map.</p>
+  <p><b>Nothing is stored in the browser</b> except the pointer to your folder and your theme -
+  the same two things the other tools remember. Everything else lives in the files.</p>
+</dialog>
+
+<script>
+/* ============================================================
+   WORLD MAP - a sibling to family-tree.html
+   ============================================================
+   Reads World/Locations/*.md and draws the abstract map: locations as nodes,
+   clustered by region:, joined by connections:. Region name and colour live in
+   World/Regions.md. Every edit rewrites the markdown text held in memory and
+   Save flushes it to disk, so positions, routes and styling all live in the
+   data (GROUND-RULES rule 1) and never in the tool. */
+
+const FS_OK = typeof window.showDirectoryPicker === "function";
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const keyOf = n => String(n||"").trim().toLowerCase();
+const esc = s => String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ============================================================
+   HELP BUBBLES - the "?" beside labels that need a sentence of explaining.
+   Popovers here are innerHTML-built, so a template drops a
+   <span data-help="key"></span> placeholder and wireHelp() swaps in the
+   real button afterwards.
+   ============================================================ */
+const HELP = {
+  regionName:"What this cluster of the map is called. Renaming it here rewrites the "+
+    "region: field in every location inside it - that's the point, but it does mean a "+
+    "rename touches several files at once. Regions are just labels: they're flat, they "+
+    "never nest, and they have no files of their own.",
+  regionColour:"The one colour this region wears. Everything else - the tinted area, its "+
+    "border, and the label ink - is derived from it, and the label is darkened or lightened "+
+    "until it actually clears a readable contrast ratio, so even a very pale or very dark "+
+    "pick stays legible in both dark and light themes. \"Auto\" derives a stable colour from "+
+    "the region's name instead."
+};
+
+function closeHelpPop(){
+  const p = document.getElementById("helpPop");
+  if(p) p.remove();
+}
+
+function helpBubble(text, label){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "helpbub";
+  b.textContent = "?";
+  b.title = "What's this?";
+  b.setAttribute("aria-label", "What is " + (label || "this field") + "?");
+  b.onclick = e => {
+    e.preventDefault(); e.stopPropagation();
+    const open = document.getElementById("helpPop");
+    const same = open && open.dataset.for === text;
+    closeHelpPop();
+    if(same) return;
+    const p = document.createElement("div");
+    p.className = "helppop"; p.id = "helpPop"; p.dataset.for = text;
+    p.textContent = text;
+    document.body.appendChild(p);
+    const r = b.getBoundingClientRect(), pad = 10;
+    p.style.left = Math.max(pad, Math.min(r.left, window.innerWidth - p.offsetWidth - pad)) + "px";
+    let top = r.bottom + 7;
+    if(top + p.offsetHeight > window.innerHeight - pad) top = Math.max(pad, r.top - p.offsetHeight - 7);
+    p.style.top = top + "px";
+  };
+  return b;
+}
+
+function wireHelp(root){
+  (root || document).querySelectorAll("[data-help]").forEach(ph=>{
+    const key = ph.dataset.help;
+    if(HELP[key]) ph.replaceWith(helpBubble(HELP[key], ph.dataset.helpLabel || key));
+  });
+}
+
+document.addEventListener("click", e=>{
+  const p = document.getElementById("helpPop");
+  if(p && !p.contains(e.target) && !e.target.closest(".helpbub")) closeHelpPop();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeHelpPop(); });
+
+const S = {
+  rootHandle:null, worldDir:null, locDir:null, savedHandle:null, readOnly:false,
+  locs:new Map(),        // key -> location (its markdown text is the truth)
+  ghosts:new Map(),      // key -> {key,name,ghost:true}
+  peek:new Map(),        // key -> character/faction summary for the popover
+  regions:new Map(),     // key -> {name,color,notes}
+  regionsText:null, regionsHandle:null, regionsDirty:false,
+  regionsDiskText:null,  // what Regions.md last looked like on disk
+  dirty:new Set(),
+  selected:null, layout:null,
+  view:{x:0,y:0,k:1},
+  showRegions:true, showGhosts:true,
+  dropKey:null
+};
+
+/* ---------- small shared helpers ---------- */
+function today(){
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function toast(msg,isErr,action){
+  const t=$("toast");
+  t.textContent=msg;
+  if(action){
+    const b=document.createElement("button");
+    b.className="undo"; b.textContent=action.label;
+    b.onclick=()=>{ t.className=""; action.fn(); };
+    t.appendChild(b);
+  }
+  t.className="show"+(isErr?" err":"");
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>{t.className="";}, isErr?5600:(action?5200:2400));
+}
+function cleanName(cell){
+  let v=String(cell||"").trim().replace(/^[★◆▲●✕?]\s*/,"");
+  const m=v.match(/\[\[([^\]|]+)(\|[^\]]*)?\]\]/);
+  if(m) return m[1].trim();
+  return v.replace(/^\[+|\]+$/g,"").trim();
+}
+function asList(v){
+  if(Array.isArray(v)) return v.map(cleanName).filter(Boolean);
+  const s=String(v||"").trim();
+  if(!s) return [];
+  return [cleanName(s)].filter(Boolean);
+}
+/* Quote anything YAML would misread (GROUND-RULES rule 3). */
+function yamlScalar(v){
+  const s=String(v==null?"":v);
+  if(s==="") return "";
+  if(/[:#\[\]{}"',]|^\s|\s$|^[&*!|>%@`]/.test(s)) return '"'+s.replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"';
+  return s;
+}
+
+/* ---------- colour maths ------------------------------------------------
+   One hex per region in Regions.md. The fill, border and label are derived
+   from it for whichever theme is showing, so a colour you pick reads properly
+   in both dark and light without you having to choose twice. */
+const PALETTE = ["#7f77dd","#1d9e75","#d85a30","#378add","#d4537e","#ba7517","#5dcaa5","#8a7433","#639922","#b5766a"];
+
+function hexToRgb(h){
+  const m=String(h||"").trim().match(/^#?([0-9a-f]{6})$/i);
+  if(!m) return null;
+  const n=parseInt(m[1],16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function rgbToHex(c){
+  return "#"+c.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+}
+function mix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function hashIdx(s,n){
+  let h=0;
+  for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  return h%n;
+}
+function baseColorFor(regionName){
+  const rec=S.regions.get(keyOf(regionName));
+  if(rec && rec.color) return rec.color;
+  return PALETTE[hashIdx(keyOf(regionName), PALETTE.length)];   // stable: name, not order
+}
+function relLum(c){
+  const s=c.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+}
+function contrast(a,b){
+  const l1=relLum(a), l2=relLum(b);
+  return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+}
+/* The colour picker accepts anything, including pale mints and dark navies that
+   would leave the region label unreadable at a fixed tint. So the label is
+   pushed toward black (light theme) or white (dark) until it actually clears
+   4.5:1 against its own fill, rather than assuming a single step is enough. */
+function readableInk(base, fill, dark){
+  const towards = dark ? [255,255,255] : [0,0,0];
+  let best=mix(base,towards,0.34);
+  for(let t=0.34;t<=0.96;t+=0.06){
+    best=mix(base,towards,t);
+    if(contrast(best,fill)>=4.5) return best;
+  }
+  return towards;                       // pure black/white as the last resort
+}
+function regionStyle(regionName){
+  const base=hexToRgb(baseColorFor(regionName)) || hexToRgb(PALETTE[0]);
+  const dark=document.documentElement.dataset.theme!=="light";
+  // mix against the live canvas colour so hulls sit naturally in any look -
+  // hardcoded field-palette constants only as a fallback
+  const bg=hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--bg").trim())
+        || (dark?[20,18,15]:[255,253,248]);
+  const fill=mix(base,bg,dark?0.80:0.86);
+  return {
+    fill: rgbToHex(fill),
+    line: rgbToHex(mix(base,bg,dark?0.48:0.42)),
+    ink : rgbToHex(readableInk(base,fill,dark))
+  };
+}
+
+/* ---------- markdown parsing (same shapes as family-tree.html) ----------
+   GROUND-RULES allows two list forms: inline `["a", "b"]` and a `- ` block
+   list. Both are read here; the writers below always emit the inline form. */
+function parseFrontmatter(text){
+  const m=text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const fm={};
+  if(!m) return fm;
+  const lines=m[1].split(/\r?\n/);
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    if(/^\s*#/.test(line) || !line.trim()) continue;
+    if(/^[ \t]*-[ \t]/.test(line)) continue;          // item of a list handled below
+    const ci=line.indexOf(":");
+    if(ci<1) continue;
+    const k=line.slice(0,ci).trim();
+    let v=line.slice(ci+1).trim().replace(/\s+#.*$/,"");
+    if(/^\[.*\]$/.test(v)){
+      v=v.slice(1,-1).split(",").map(s=>s.trim().replace(/^["']|["']$/g,"")).filter(Boolean);
+    } else if(v==="" && /^[ \t]*-[ \t]/.test(lines[i+1]||"")){
+      const arr=[];
+      while(/^[ \t]*-[ \t]/.test(lines[i+1]||"")){
+        i++;
+        arr.push(lines[i].replace(/^[ \t]*-[ \t]+/,"").replace(/\s+#.*$/,"")
+          .trim().replace(/^["']|["']$/g,""));
+      }
+      v=arr.filter(Boolean);
+    } else {
+      v=v.replace(/^["']|["']$/g,"");
+    }
+    fm[k]=v;
+  }
+  return fm;
+}
+function firstTagline(text){
+  const body=text.replace(/^---\r?\n[\s\S]*?\r?\n---/,"");
+  const m=body.match(/^\s*>\s?(.+)$/m);
+  return m ? m[1].trim() : "";
+}
+function sectionText(text, heading){
+  const lines=text.split(/\r?\n/);
+  const want=("## "+heading).toLowerCase();
+  let start=-1;
+  for(let i=0;i<lines.length;i++){ if(lines[i].trim().toLowerCase()===want){ start=i; break; } }
+  if(start<0) return "";
+  let end=lines.length;
+  for(let i=start+1;i<lines.length;i++){ if(/^##\s/.test(lines[i])){ end=i; break; } }
+  return lines.slice(start+1,end).join("\n").trim();
+}
+
+/* ---------- markdown writing (leave every other byte alone) ----------
+   Two care points here. A key's old value may be a `- ` block list, so the
+   pattern for "the existing entry" has to swallow those continuation lines
+   too, or replacing `connections:` would strand its items as orphan dashes.
+   And every replacement goes in as a function - a plain string containing
+   `$&` or `$'` (legal in a name) would be expanded by String.replace. */
+function keyBlockRe(key){
+  return new RegExp("^"+key+":[^\\n]*(?:\\n[ \\t]*-[ \\t][^\\n]*)*","m");
+}
+function swapFrontmatter(text, m, fm){
+  return text.replace(m[0], ()=>"---\n"+fm+"\n---");
+}
+function setFrontField(text, key, val){
+  const m=text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if(!m) return text;
+  let fm=m[1];
+  const re=keyBlockRe(key);
+  const line=key+": "+val;
+  fm = re.test(fm) ? fm.replace(re,()=>line) : fm+"\n"+line;
+  return swapFrontmatter(text, m, fm);
+}
+function removeFrontField(text, key){
+  const m=text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if(!m) return text;
+  const fm=m[1].replace(new RegExp(keyBlockRe(key).source+"\\r?\\n?","m"),"");
+  return swapFrontmatter(text, m, fm);
+}
+function setLinkList(text, key, names){
+  const v = names.length ? "["+names.map(n=>'"[['+n+']]"').join(", ")+"]" : "[]";
+  return setFrontField(text, key, v);
+}
+function bumpUpdated(text){
+  const m=text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if(!m) return text;
+  let fm=m[1];
+  fm = /^updated:.*$/m.test(fm) ? fm.replace(/^updated:.*$/m,()=>"updated: "+today())
+                                : fm+"\nupdated: "+today();
+  return swapFrontmatter(text, m, fm);
+}
+
+/* ---------- remembering the folder (shared entry, same as the others) ---------- */
+const FOLDER_DB="cdb-folder", FOLDER_STORE="handles", FOLDER_KEY="root";
+function folderTx(mode){
+  return new Promise((res,rej)=>{
+    let rq;
+    try{ rq=indexedDB.open(FOLDER_DB,1); }catch(e){ rej(e); return; }
+    rq.onupgradeneeded=()=>rq.result.createObjectStore(FOLDER_STORE);
+    rq.onerror=()=>rej(rq.error);
+    rq.onsuccess=()=>{
+      const db=rq.result, tx=db.transaction(FOLDER_STORE,mode);
+      tx.oncomplete=()=>db.close();
+      res(tx.objectStore(FOLDER_STORE));
+    };
+  });
+}
+async function rememberFolder(handle){
+  try{ (await folderTx("readwrite")).put(handle,FOLDER_KEY); }catch(e){}
+}
+async function recallFolder(){
+  try{
+    const store=await folderTx("readonly");
+    return await new Promise(res=>{
+      const q=store.get(FOLDER_KEY);
+      q.onsuccess=()=>res(q.result||null);
+      q.onerror=()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function resolveFolders(handle){
+  try{
+    const world=await handle.getDirectoryHandle("World");
+    const loc=await world.getDirectoryHandle("Locations");
+    return {root:handle, worldDir:world, locDir:loc, isRoot:true};
+  }catch(e){}
+  const nm=handle.name.toLowerCase();
+  if(nm==="world"){
+    try{ return {root:null, worldDir:handle, locDir:await handle.getDirectoryHandle("Locations"), isRoot:false}; }catch(e){}
+  }
+  if(nm==="locations") return {root:null, worldDir:null, locDir:handle, isRoot:false};
+  return null;
+}
+async function useFolder(handle){
+  const r=await resolveFolders(handle);
+  if(!r){
+    toast('No "World/Locations" under "'+handle.name+'". Pick the Character Database folder.', true);
+    return false;
+  }
+  S.rootHandle=r.root; S.worldDir=r.worldDir; S.locDir=r.locDir; S.readOnly=false;
+  if(r.isRoot){ S.savedHandle=handle; rememberFolder(handle); }
+  $("fsDot").className="dot on";
+  $("fsLabel").textContent = r.isRoot ? handle.name : (handle.name+"/…");
+  await loadAll();
+  return true;
+}
+async function connectFolder(){
+  if(!FS_OK){ pickFallback(); return; }
+  if(S.savedHandle && !S.locDir){
+    try{
+      if(await S.savedHandle.requestPermission({mode:"readwrite"})==="granted"){
+        if(await useFolder(S.savedHandle)) return;
+      }
+    }catch(e){}
+  }
+  try{
+    await useFolder(await window.showDirectoryPicker({mode:"readwrite"}));
+  }catch(e){
+    if(e && e.name==="AbortError") return;
+    toast("Couldn't open the folder: "+(e&&e.message), true);
+  }
+}
+async function restoreFolder(){
+  if(!FS_OK) return;
+  const h=await recallFolder();
+  if(!h) return;
+  S.savedHandle=h;
+  let perm="prompt";
+  try{ perm=await h.queryPermission({mode:"readwrite"}); }catch(e){}
+  if(perm==="granted"){ await useFolder(h); return; }
+  $("fsDot").className="dot warn";
+  $("fsLabel").textContent='reconnect "'+h.name+'"';
+}
+function pickFallback(){
+  const inp=document.createElement("input");
+  inp.type="file"; inp.webkitdirectory=true; inp.multiple=true;
+  inp.onchange=async ()=>{
+    const all=[...inp.files].filter(f=>/\.md$/i.test(f.name));
+    const locFiles=all.filter(f=>/(^|\/)World\/Locations\//i.test(f.webkitRelativePath||""));
+    if(!locFiles.length){ toast("No World/Locations/*.md found in that folder.", true); return; }
+    S.locs.clear(); S.dirty.clear(); S.peek.clear(); S.regions=new Map();
+    S.readOnly=true; S.locDir=null; S.rootHandle=null; S.worldDir=null;
+    const reg=all.find(f=>/(^|\/)World\/Regions\.md$/i.test(f.webkitRelativePath||""));
+    if(reg){ S.regionsText=await reg.text(); S.regionsDiskText=S.regionsText; S.regions=parseRegionsTable(S.regionsText); }
+    for(const f of locFiles){
+      if(/^_/.test(f.name)) continue;
+      ingestLocation(f.name, await f.text(), null);
+    }
+    for(const f of all){
+      const p=f.webkitRelativePath||"";
+      if(/(^|\/)Characters\//i.test(p)) ingestPeek(f.name, await f.text(), "character");
+      else if(/(^|\/)World\/Factions\//i.test(p)) ingestPeek(f.name, await f.text(), "faction");
+    }
+    $("fsDot").className="dot on";
+    $("fsLabel").textContent="read-only";
+    afterLoad();
+    toast("Loaded read-only. Edits can't be written back in this mode.");
+  };
+  inp.click();
+}
+async function loadAll(){
+  if(!S.locDir) return;
+  S.locs.clear(); S.dirty.clear(); S.peek.clear();
+  S.regions=new Map(); S.regionsText=null; S.regionsHandle=null;
+  S.regionsDirty=false; S.regionsDiskText=null;
+  for await (const [name,handle] of S.locDir.entries()){
+    if(handle.kind!=="file" || !/\.md$/i.test(name)) continue;
+    if(/^_/.test(name)) continue;
+    const f=await handle.getFile();
+    ingestLocation(name, await f.text(), handle);
+  }
+  await loadRegions();
+  await loadPeek();
+  afterLoad();
+}
+async function loadRegions(){
+  if(!S.worldDir) return;
+  try{
+    const h=await S.worldDir.getFileHandle("Regions.md");
+    S.regionsHandle=h;
+    S.regionsText=await (await h.getFile()).text();
+    S.regionsDiskText=S.regionsText;
+    S.regions=parseRegionsTable(S.regionsText);
+  }catch(e){ S.regionsHandle=null; S.regionsText=null; S.regionsDiskText=null; S.regions=new Map(); }
+}
+/* Characters and factions aren't on the map, but the sidebar names them - read
+   just enough to show a card without leaving the page. */
+async function loadPeek(){
+  if(!S.rootHandle) return;
+  const jobs=[["character",["Characters"]],["faction",["World","Factions"]]];
+  for(const [kind,path] of jobs){
+    try{
+      let dir=S.rootHandle;
+      for(const p of path) dir=await dir.getDirectoryHandle(p);
+      for await (const [name,handle] of dir.entries()){
+        if(handle.kind!=="file" || !/\.md$/i.test(name)) continue;
+        if(/^_/.test(name)) continue;
+        ingestPeek(name, await (await handle.getFile()).text(), kind);
+      }
+    }catch(e){}
+  }
+}
+function ingestPeek(fileName, text, kind){
+  const fm=parseFrontmatter(text);
+  const name=(fm.name&&String(fm.name).trim())||fileName.replace(/\.md$/i,"");
+  S.peek.set(keyOf(name),{
+    name, kind,
+    type:(fm.type&&String(fm.type).trim())||(fm.species&&String(fm.species).trim())||"",
+    status:(fm.status&&String(fm.status).trim())||"",
+    tagline:firstTagline(text),
+    summary:sectionText(text,"Summary")||sectionText(text,"What They Want")||sectionText(text,"Personality")
+  });
+}
+
+/* ---------- Regions.md ---------- */
+function parseRegionsTable(text){
+  const map=new Map();
+  String(text||"").split(/\r?\n/).forEach(line=>{
+    const t=line.trim();
+    if(!t.startsWith("|")) return;
+    if(/^\|[\s:|-]+\|$/.test(t)) return;
+    // split on unescaped pipes only - regionsTableMd writes \| inside notes
+    const cells=t.replace(/^\||\|$/g,"").split(/(?<!\\)\|/)
+      .map(c=>c.replace(/\\\|/g,"|").trim());
+    if(/^region$/i.test(cells[0]||"")) return;
+    const name=cleanName(cells[0]);
+    if(!name) return;
+    const color=(cells[1]||"").trim();
+    map.set(keyOf(name),{
+      name,
+      color:/^#[0-9a-f]{6}$/i.test(color)?color.toLowerCase():"",
+      notes:(cells[2]||"").trim()
+    });
+  });
+  return map;
+}
+function regionsTableMd(){
+  const names=new Set();
+  S.locs.forEach(l=>{ if(l.region) names.add(l.region); });
+  S.regions.forEach(r=>{ if(r.name) names.add(r.name); });
+  const rows=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>{
+    const r=S.regions.get(keyOf(n))||{};
+    const cells=[n, r.color||"", r.notes||""].map(c=>String(c).replace(/\|/g,"\\|"));
+    return "| "+cells.join(" | ")+" |";
+  });
+  return "| Region | Colour | Notes |\n|---|---|---|"+(rows.length?"\n"+rows.join("\n"):"");
+}
+/* Swap only the table block, so prose above and below it survives. */
+function replaceRegionsTable(text, table){
+  const lines=String(text||"").split(/\r?\n/);
+  let start=-1,end=-1;
+  for(let i=0;i<lines.length;i++){
+    if(/^\s*\|/.test(lines[i])){ if(start<0) start=i; end=i; }
+    else if(start>=0) break;
+  }
+  if(start<0) return String(text||"").replace(/\s*$/,"")+"\n\n"+table+"\n";
+  return lines.slice(0,start).concat(table.split("\n"), lines.slice(end+1)).join("\n");
+}
+const REGIONS_BOILERPLATE = [
+  "---","name: Regions","type: index","status: seed",
+  "created: "+today(),"updated: "+today(),"---","",
+  "# Regions","",
+  "The clusters on the world map. A location joins one by putting its name in",
+  "`region:` - this file is where the region itself gets a colour and a note.","",
+  "`world-map.html` reads and writes this table. Editing it by hand is fine -",
+  "keep the columns, and keep Colour as a `#rrggbb` hex or blank for automatic.",""
+].join("\n");
+
+/* ---------- the location model ---------- */
+function deriveLoc(l){
+  const fm=parseFrontmatter(l.text);
+  l.fm=fm;
+  l.name=(fm.name&&String(fm.name).trim())||String(l.fileName||"").replace(/\.md$/i,"");
+  l.region=(fm.region&&String(fm.region).trim())||"";
+  l.type=(fm.type&&String(fm.type).trim())||"";
+  l.status=(fm.status&&String(fm.status).trim())||"";
+  l.tagline=firstTagline(l.text);
+  l.summary=sectionText(l.text,"Summary");
+  l.connections=asList(fm.connections);
+  l.factions=asList(fm.factions);
+  l.notable=asList(fm.notable_characters);
+  const px=parseFloat(fm.map_x), py=parseFloat(fm.map_y);
+  l.pinned=Number.isFinite(px)&&Number.isFinite(py);
+  l.px=l.pinned?px:null; l.py=l.pinned?py:null;
+  return l;
+}
+function ingestLocation(fileName, text, handle){
+  // diskText mirrors what's on disk so dirtiness is always text!==diskText,
+  // even after an undo steps back across a save
+  const l={key:"", name:"", fileName, handle, text, diskText:text, exists:true, isNew:false, x:0, y:0};
+  deriveLoc(l);
+  l.key=keyOf(l.name);
+  S.locs.set(l.key,l);
+  return l;
+}
+function rebuildGhosts(){
+  S.ghosts.clear();
+  for(const loc of S.locs.values()){
+    for(const c of loc.connections){
+      const ck=keyOf(c);
+      if(!S.locs.has(ck) && !S.ghosts.has(ck)) S.ghosts.set(ck,{key:ck,name:c,ghost:true});
+    }
+  }
+}
+function afterLoad(){
+  rebuildGhosts();
+  // a Reload/Discard may have removed whatever was selected
+  if(S.selected && !S.locs.has(S.selected) && !S.ghosts.has(S.selected)) S.selected=null;
+  markDirty();
+  checkWarnings();
+  const n=S.locs.size;
+  $("fileLabel").textContent = n ? (n+" location"+(n===1?"":"s")) : "";
+  if(!n){
+    $("blank").querySelector("div").innerHTML =
+      'No files in <code>World/Locations/</code> yet. Make one in the writer '+
+      '(<b>New location or faction</b>) and it appears here.';
+  }
+  layoutAndRender();
+  renderSide();
+}
+
+/* ============================================================
+   UNDO - full snapshots. Small model, and no way to half-apply.
+   ============================================================ */
+const HIST={past:[],future:[],limit:60};
+function snapshot(){
+  return {
+    locs:[...S.locs.entries()].map(([k,l])=>[k,{
+      key:l.key,name:l.name,fileName:l.fileName,handle:l.handle,text:l.text,
+      diskText:l.diskText,exists:l.exists,isNew:l.isNew,x:l.x,y:l.y
+    }]),
+    regions:[...S.regions.entries()].map(([k,r])=>[k,Object.assign({},r)]),
+    regionsText:S.regionsText, regionsDirty:S.regionsDirty,
+    dirty:[...S.dirty], selected:S.selected
+  };
+}
+function restore(s){
+  /* diskText and file handles describe the DISK, which history does not roll
+     back - a save after the snapshot moved them on. Carry the live values
+     across; only a loc absent from live state keeps its snapshot copy. */
+  const live=new Map([...S.locs.entries()].map(([k,l])=>[k,{diskText:l.diskText,handle:l.handle}]));
+  S.locs=new Map(s.locs.map(([k,l])=>{
+    const o=Object.assign({},l);
+    const cur=live.get(k);
+    if(cur){ o.diskText=cur.diskText; if(cur.handle) o.handle=cur.handle; }
+    deriveLoc(o); o.key=k; return [k,o];
+  }));
+  S.regions=new Map(s.regions.map(([k,r])=>[k,Object.assign({},r)]));
+  S.regionsText=s.regionsText;
+  /* Dirtiness can't be taken from the snapshot alone: a save that happened
+     after it was taken changed the disk, so anything whose text now differs
+     from diskText needs writing again even though it wasn't dirty then. */
+  S.dirty=new Set(s.dirty);
+  S.locs.forEach((l,k)=>{ if(l.text!==l.diskText) S.dirty.add(k); });
+  S.regionsDirty = s.regionsDirty || (s.regionsText!==S.regionsDiskText);
+  S.selected=s.selected;
+  rebuildGhosts(); markDirty(); checkWarnings();
+  layoutAndRender(); renderSide();
+}
+function pushUndo(label){
+  HIST.past.push({label,state:snapshot()});
+  if(HIST.past.length>HIST.limit) HIST.past.shift();
+  HIST.future.length=0;
+  syncHist();
+}
+function undo(){
+  const step=HIST.past.pop();
+  if(!step){ toast("Nothing to undo."); return; }
+  HIST.future.push({label:step.label,state:snapshot()});
+  restore(step.state); syncHist();
+  toast("Undone: "+step.label);
+}
+function redo(){
+  const step=HIST.future.pop();
+  if(!step){ toast("Nothing to redo."); return; }
+  HIST.past.push({label:step.label,state:snapshot()});
+  restore(step.state); syncHist();
+  toast("Redone: "+step.label);
+}
+function syncHist(){
+  const u=$("btnUndo"), r=$("btnRedo");
+  u.disabled=!HIST.past.length; r.disabled=!HIST.future.length;
+  u.title=HIST.past.length?("Undo "+HIST.past[HIST.past.length-1].label+" (Ctrl+Z)"):"Undo (Ctrl+Z)";
+  r.title=HIST.future.length?("Redo "+HIST.future[HIST.future.length-1].label+" (Ctrl+Shift+Z)"):"Redo (Ctrl+Shift+Z)";
+}
+
+/* ============================================================
+   EDITS - each rewrites markdown text, then re-derives
+   ============================================================ */
+function touch(l){ S.dirty.add(l.key); }
+
+function setPinned(l,x,y){
+  l.text=setFrontField(l.text,"map_x",Math.round(x));
+  l.text=setFrontField(l.text,"map_y",Math.round(y));
+  deriveLoc(l); touch(l);
+}
+function clearPin(l){
+  l.text=removeFrontField(l.text,"map_x");
+  l.text=removeFrontField(l.text,"map_y");
+  deriveLoc(l); touch(l);
+}
+function addConnection(aKey,bKey,mutual){
+  const a=S.locs.get(aKey);
+  if(!a) return;
+  const bRec=S.locs.get(bKey)||S.ghosts.get(bKey);
+  if(!bRec) return;
+  if(!a.connections.some(c=>keyOf(c)===bKey)){
+    a.text=setLinkList(a.text,"connections",a.connections.concat([bRec.name]));
+    deriveLoc(a); touch(a);
+  }
+  if(mutual){
+    const b=S.locs.get(bKey);
+    if(b && !b.connections.some(c=>keyOf(c)===aKey)){
+      b.text=setLinkList(b.text,"connections",b.connections.concat([a.name]));
+      deriveLoc(b); touch(b);
+    }
+  }
+  rebuildGhosts(); checkWarnings();
+}
+function removeConnection(aKey,bKey,bothWays){
+  const a=S.locs.get(aKey);
+  if(a && a.connections.some(c=>keyOf(c)===bKey)){
+    a.text=setLinkList(a.text,"connections",a.connections.filter(c=>keyOf(c)!==bKey));
+    deriveLoc(a); touch(a);
+  }
+  if(bothWays){
+    const b=S.locs.get(bKey);
+    if(b && b.connections.some(c=>keyOf(c)===aKey)){
+      b.text=setLinkList(b.text,"connections",b.connections.filter(c=>keyOf(c)!==aKey));
+      deriveLoc(b); touch(b);
+    }
+  }
+  rebuildGhosts(); checkWarnings();
+}
+function renameRegion(oldName,newName){
+  const on=String(oldName||"").trim(), nn=String(newName||"").trim();
+  if(!nn || on===nn) return 0;
+  let n=0;
+  S.locs.forEach(l=>{
+    if(l.region===on){
+      l.text=setFrontField(l.text,"region",yamlScalar(nn));
+      deriveLoc(l); touch(l); n++;
+    }
+  });
+  const rec=S.regions.get(keyOf(on));
+  if(rec){ S.regions.delete(keyOf(on)); rec.name=nn; S.regions.set(keyOf(nn),rec); }
+  else S.regions.set(keyOf(nn),{name:nn,color:"",notes:""});
+  S.regionsDirty=true;
+  checkWarnings();
+  return n;
+}
+function setRegionColor(name,color){
+  const k=keyOf(name);
+  const rec=S.regions.get(k)||{name:String(name),color:"",notes:""};
+  rec.name=String(name); rec.color=color||"";
+  S.regions.set(k,rec);
+  S.regionsDirty=true;
+}
+function newLocationText(name,region,connectBack){
+  return [
+    "---",
+    "name: "+yamlScalar(name),
+    "type:",
+    "status: seed",
+    "created: "+today(),
+    "updated: "+today(),
+    "tags: []",
+    "",
+    "parent_location:",
+    "region: "+yamlScalar(region||""),
+    "connections: "+(connectBack?'["[['+connectBack+']]"]':"[]"),
+    "factions: []",
+    "notable_characters: []",
+    "---",
+    "",
+    "# "+name,
+    "",
+    "## Summary",
+    "",
+    "## Feel",
+    "",
+    "## History",
+    "",
+    "## Who Lives Here",
+    "",
+    "## Story Hooks",
+    "",
+    "## Open Questions",
+    "",
+    "- [ ] ",
+    ""
+  ].join("\n");
+}
+function createFromGhost(ghostKey){
+  const g=S.ghosts.get(ghostKey);
+  if(!g) return;
+  const referrer=[...S.locs.values()].find(l=>l.connections.some(c=>keyOf(c)===ghostKey));
+  pushUndo("new location "+g.name);
+  const text=newLocationText(g.name, referrer?referrer.region:"", referrer?referrer.name:"");
+  const fileName=g.name.replace(/[\\/:*?"<>|]/g,"-")+".md";
+  const l={key:keyOf(g.name),name:g.name,fileName,handle:null,text,diskText:null,exists:true,isNew:true,x:0,y:0};
+  deriveLoc(l); l.key=keyOf(l.name);
+  S.locs.set(l.key,l); touch(l);
+  S.ghosts.delete(ghostKey);
+  rebuildGhosts(); markDirty(); checkWarnings();
+  S.selected=l.key;
+  layoutAndRender(); renderSide();
+  toast('Created "'+g.name+'" as a seed location. Save to write the file.');
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+const NODE_H=52, GHOST_W=120;
+let _measure;
+function measureText(str,font){
+  if(!_measure) _measure=document.createElement("canvas").getContext("2d");
+  _measure.font=font;
+  return _measure.measureText(str).width;
+}
+function nodeWidth(name){
+  const w=measureText(name,"600 14px ui-sans-serif,system-ui,sans-serif");
+  return Math.max(96,Math.min(240,Math.round(w+30)));
+}
+function ringPositions(n){
+  if(n===1) return [{x:0,y:0}];
+  if(n===2) return [{x:-92,y:0},{x:92,y:0}];
+  if(n<=8){
+    const r=Math.max(120,n*20);
+    return Array.from({length:n},(_,i)=>{
+      const a=-Math.PI/2+i*2*Math.PI/n;
+      return {x:Math.round(Math.cos(a)*r), y:Math.round(Math.sin(a)*r*0.82)};
+    });
+  }
+  const cols=Math.ceil(Math.sqrt(n)), gx=190, gy=88;
+  return Array.from({length:n},(_,i)=>{
+    const c=i%cols, r=Math.floor(i/cols);
+    return {x:(c-(cols-1)/2)*gx, y:(r-(Math.ceil(n/cols)-1)/2)*gy};
+  });
+}
+const NO_REGION=" (no region)", UNWRITTEN="(unwritten)";
+function computeLayout(){
+  const nodes=[];
+  S.locs.forEach(l=>nodes.push(l));
+  if(S.showGhosts) S.ghosts.forEach(g=>nodes.push(g));
+  nodes.forEach(nd=>{ nd.w=nd.ghost?GHOST_W:nodeWidth(nd.name); nd.h=NODE_H; });
+
+  const buckets=new Map();
+  const put=(k,nd)=>{ if(!buckets.has(k)) buckets.set(k,[]); buckets.get(k).push(nd); };
+  S.locs.forEach(l=>put(l.region||NO_REGION,l));
+  if(S.showGhosts) S.ghosts.forEach(g=>put(UNWRITTEN,g));
+
+  const regionKeys=[...buckets.keys()].sort((a,b)=>a.localeCompare(b));
+  const local=new Map(); let maxRadius=90;
+  regionKeys.forEach(rk=>{
+    const list=buckets.get(rk), pos=ringPositions(list.length);
+    let rad=0;
+    list.forEach((nd,i)=>rad=Math.max(rad,Math.hypot(pos[i].x,pos[i].y)+nd.w/2));
+    rad=Math.max(rad+34,110);
+    local.set(rk,{pos,rad});
+    maxRadius=Math.max(maxRadius,rad);
+  });
+  const cell=2*maxRadius+70;
+  const cols=Math.max(1,Math.ceil(Math.sqrt(regionKeys.length)));
+  const centers=new Map();
+  regionKeys.forEach((rk,i)=>{
+    const c=i%cols, r=Math.floor(i/cols);
+    centers.set(rk,{cx:c*cell+cell/2, cy:r*cell+cell/2});
+  });
+  regionKeys.forEach(rk=>{
+    const {pos}=local.get(rk), {cx,cy}=centers.get(rk);
+    buckets.get(rk).forEach((nd,i)=>{
+      if(nd.pinned){ nd.x=nd.px; nd.y=nd.py; }
+      else { nd.x=cx+pos[i].x; nd.y=cy+pos[i].y; }
+    });
+  });
+
+  const hulls=[];
+  regionKeys.forEach(rk=>{
+    if(rk===NO_REGION||rk===UNWRITTEN) return;
+    const list=buckets.get(rk);
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    list.forEach(nd=>{
+      x0=Math.min(x0,nd.x-nd.w/2); y0=Math.min(y0,nd.y-nd.h/2);
+      x1=Math.max(x1,nd.x+nd.w/2); y1=Math.max(y1,nd.y+nd.h/2);
+    });
+    hulls.push({region:rk, x:x0-20, y:y0-30, w:(x1-x0)+40, h:(y1-y0)+50});
+  });
+
+  const seen=new Map();
+  const nodeByKey=new Map(nodes.map(n=>[n.key,n]));
+  S.locs.forEach(l=>{
+    l.connections.forEach(c=>{
+      const tk=keyOf(c);
+      if(!nodeByKey.get(tk)) return;
+      const pk=[l.key,tk].sort().join("|");
+      const back=(S.locs.get(tk)?.connections||[]).some(x=>keyOf(x)===l.key);
+      if(seen.has(pk)){ if(back) seen.get(pk).mutual=true; return; }
+      seen.set(pk,{a:l.key,b:tk,mutual:back});
+    });
+  });
+
+  const PAD=60;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  const bump=(x,y)=>{minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);};
+  nodes.forEach(nd=>{ bump(nd.x-nd.w/2,nd.y-nd.h/2); bump(nd.x+nd.w/2,nd.y+nd.h/2); });
+  hulls.forEach(h=>{ bump(h.x,h.y); bump(h.x+h.w,h.y+h.h); });
+  if(!nodes.length){ minX=0;minY=0;maxX=200;maxY=200; }
+  const dx=PAD-minX, dy=PAD-minY;
+  nodes.forEach(nd=>{ nd.x+=dx; nd.y+=dy; });
+  hulls.forEach(h=>{ h.x+=dx; h.y+=dy; });
+
+  return {nodes, edges:[...seen.values()], hulls,
+    width:(maxX-minX)+PAD*2, height:(maxY-minY)+PAD*2, nodeByKey};
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function svgEl(tag,attrs){
+  const e=document.createElementNS(SVGNS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  return e;
+}
+function layoutAndRender(){
+  S.layout=(S.locs.size||S.ghosts.size)?computeLayout():null;
+  $("blank").style.display=S.layout?"none":"flex";
+  render();
+  if(S.layout) fitIfNeeded(S.layout);
+}
+function render(){
+  const vp=$("viewport");
+  vp.textContent="";
+  const L=S.layout;
+  if(!L) return;
+
+  if(S.showRegions){
+    L.hulls.forEach(h=>{
+      const st=regionStyle(h.region);
+      vp.appendChild(svgEl("rect",{class:"regionHull","data-region":h.region,
+        x:h.x,y:h.y,width:h.w,height:h.h,rx:16,fill:st.fill,stroke:st.line}));
+      const lbl=svgEl("text",{class:"regionLabel","data-region":h.region,
+        x:h.x+14,y:h.y+19,fill:st.ink});
+      lbl.textContent=h.region;
+      vp.appendChild(lbl);
+    });
+  }
+
+  L.edges.forEach(e=>{
+    const a=L.nodeByKey.get(e.a), b=L.nodeByKey.get(e.b);
+    if(!a||!b) return;
+    const ln=svgEl("line",{class:"route"+(e.mutual?"":" oneway"),x1:a.x,y1:a.y,x2:b.x,y2:b.y});
+    if(!e.mutual) ln.setAttribute("marker-end","url(#arrow)");
+    vp.appendChild(ln);
+  });
+
+  L.nodes.forEach(nd=>{
+    const cls="node"+(nd.ghost?" ghost":"")+(S.selected===nd.key?" sel":"")+(S.dropKey===nd.key?" dropok":"");
+    const g=svgEl("g",{class:cls,"data-key":nd.key});
+    const x=nd.x-nd.w/2, y=nd.y-nd.h/2;
+    g.appendChild(svgEl("rect",{class:"card",x,y,width:nd.w,height:nd.h,rx:10}));
+    const nm=svgEl("text",{class:"nm",x:nd.x,y:nd.y-3,"text-anchor":"middle"});
+    nm.textContent=nd.name;
+    g.appendChild(nm);
+    const sub=nd.ghost?"no file yet":([nd.type,nd.status].filter(Boolean).join(" · ")||nd.region||"");
+    if(sub){
+      const s=svgEl("text",{class:"sub",x:nd.x,y:nd.y+15,"text-anchor":"middle"});
+      s.textContent=sub;
+      g.appendChild(s);
+    }
+    if(nd.pinned) g.appendChild(svgEl("circle",{cx:x+nd.w-9,cy:y+9,r:3,fill:cssVar("--accent")}));
+    if(nd.isNew) g.appendChild(svgEl("circle",{cx:x+9,cy:y+9,r:3,fill:cssVar("--ok")}));
+    vp.appendChild(g);
+  });
+}
+
+/* ============================================================
+   VIEW
+   ============================================================ */
+function applyView(){
+  $("viewport").setAttribute("transform",
+    `translate(${S.view.x},${S.view.y}) scale(${S.view.k})`);
+  $("zoomLabel").textContent=Math.round(S.view.k*100)+"%";
+}
+function fit(L){
+  L=L||S.layout; if(!L) return;
+  const r=$("map").getBoundingClientRect();
+  const k=Math.min(r.width/L.width,r.height/L.height,1.35);
+  S.view.k=Math.max(0.15,k*0.94);
+  S.view.x=(r.width-L.width*S.view.k)/2;
+  S.view.y=(r.height-L.height*S.view.k)/2;
+  applyView();
+}
+let lastFitKey="";
+function fitIfNeeded(L){
+  const key=S.locs.size+"|"+S.ghosts.size+"|"+S.showGhosts+"|"+Math.round(L.width);
+  if(key!==lastFitKey){ lastFitKey=key; fit(L); } else applyView();
+}
+function zoomBy(f,cx,cy){
+  const r=$("map").getBoundingClientRect();
+  cx=cx==null?r.width/2:cx; cy=cy==null?r.height/2:cy;
+  const k2=Math.min(3,Math.max(0.12,S.view.k*f));
+  S.view.x=cx-(cx-S.view.x)*(k2/S.view.k);
+  S.view.y=cy-(cy-S.view.y)*(k2/S.view.k);
+  S.view.k=k2;
+  applyView();
+}
+function screenToWorld(sx,sy){
+  const r=$("map").getBoundingClientRect();
+  return {x:(sx-r.left-S.view.x)/S.view.k, y:(sy-r.top-S.view.y)/S.view.k};
+}
+function nodeAt(wx,wy,exceptKey){
+  if(!S.layout) return null;
+  for(let i=S.layout.nodes.length-1;i>=0;i--){
+    const n=S.layout.nodes[i];
+    if(n.key===exceptKey) continue;
+    if(wx>=n.x-n.w/2&&wx<=n.x+n.w/2&&wy>=n.y-n.h/2&&wy<=n.y+n.h/2) return n;
+  }
+  return null;
+}
+function centerOn(key){
+  const nd=S.layout&&S.layout.nodeByKey.get(key);
+  if(!nd) return;
+  const r=$("map").getBoundingClientRect();
+  S.view.x=r.width/2-nd.x*S.view.k;
+  S.view.y=r.height/2-nd.y*S.view.k;
+  applyView();
+}
+
+/* ============================================================
+   FLOATING LAYERS - one at a time
+   ============================================================ */
+let popEl=null;
+function closePop(){ if(popEl){ popEl.remove(); popEl=null; } }
+function openPop(html, clientX, clientY, anchorRect){
+  closePop();
+  const d=document.createElement("div");
+  d.className="pop";
+  d.innerHTML=html;
+  document.body.appendChild(d);
+  const r=d.getBoundingClientRect();
+  let left, top;
+  if(anchorRect){
+    left=anchorRect.left+anchorRect.width/2-r.width/2;
+    top=anchorRect.top-r.height-10;
+    if(top<10) top=anchorRect.bottom+10;
+  } else {
+    left=clientX-r.width/2; top=clientY-r.height-12;
+    if(top<10) top=clientY+14;
+  }
+  left=Math.max(10,Math.min(left,window.innerWidth-r.width-10));
+  top=Math.max(10,Math.min(top,window.innerHeight-r.height-10));
+  d.style.left=Math.round(left)+"px";
+  d.style.top=Math.round(top)+"px";
+  popEl=d;
+  const cl=d.querySelector(".close");
+  if(cl) cl.onclick=closePop;
+  return d;
+}
+document.addEventListener("pointerdown",e=>{
+  if(popEl && !popEl.contains(e.target)) closePop();
+},true);
+window.addEventListener("keydown",e=>{ if(e.key==="Escape") closePop(); });
+
+/* ---- peek card: a faction or character, without leaving the map ---- */
+function openPeek(name, anchorEl){
+  const p=S.peek.get(keyOf(name));
+  const rect=anchorEl.getBoundingClientRect();
+  if(!p){
+    openPop(
+      '<h5>'+esc(name)+'</h5>'+
+      '<div class="kind">not found</div>'+
+      '<p class="bd miss">No file called "'+esc(name)+'.md" in Characters/ or World/Factions/ yet.</p>'+
+      '<div class="foot"><button class="close">✕</button></div>', 0,0, rect);
+    return;
+  }
+  const meta=[p.kind,p.type,p.status].filter(Boolean).join(" · ");
+  const body=p.summary
+    ? (p.summary.length>340?p.summary.slice(0,340).replace(/\s+\S*$/,"")+"…":p.summary)
+    : "";
+  const href="character-writer.html#type="+(p.kind==="faction"?"faction":"character")+"&mode=form";
+  openPop(
+    '<h5>'+esc(p.name)+'</h5>'+
+    '<div class="kind">'+esc(meta)+'</div>'+
+    (p.tagline?'<p class="tl">'+esc(p.tagline)+'</p>':"")+
+    (body?'<p class="bd">'+esc(body)+'</p>':'<p class="bd miss">Nothing written yet.</p>')+
+    '<div class="foot"><a href="'+href+'" target="_blank" rel="noopener">Open in writer ↗</a>'+
+    '<button class="close">✕</button></div>', 0,0, rect);
+}
+
+/* ---- region editor: rename + recolour, from clicking the area ---- */
+function openRegionEditor(region, clientX, clientY){
+  const count=[...S.locs.values()].filter(l=>l.region===region).length;
+  const cur=(S.regions.get(keyOf(region))||{}).color||"";
+  const swatches=PALETTE.map(c=>
+    '<button class="sw'+(cur.toLowerCase()===c.toLowerCase()?" on":"")+
+    '" data-c="'+c+'" style="background:'+c+'" title="'+c+'"></button>').join("");
+  const d=openPop(
+    '<h5>'+esc(region)+'</h5>'+
+    '<div class="kind">'+count+' location'+(count===1?"":"s")+' here</div>'+
+    '<div class="f"><label>Name<span data-help="regionName" data-help-label="Region name"></span></label>'+
+      '<input type="text" id="rgName" value="'+esc(region)+'"></div>'+
+    '<div class="f"><label>Colour<span data-help="regionColour" data-help-label="Region colour"></span></label><div class="swatches">'+
+      '<button class="sw auto'+(cur?"":" on")+'" data-c="" title="Automatic">auto</button>'+
+      swatches+
+      '<input type="color" id="rgCustom" value="'+(cur||"#7f77dd")+'" title="Custom colour" '+
+        'style="width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer">'+
+    '</div></div>'+
+    '<div class="rowb"><button class="btn sm primary" id="rgApply">Apply</button>'+
+    '<button class="btn sm" id="rgCancel">Cancel</button><span class="grow"></span>'+
+    '<button class="close">✕</button></div>',
+    clientX, clientY);
+
+  wireHelp(d);
+
+  let chosen=cur;
+  const marks=()=>d.querySelectorAll(".sw").forEach(b=>
+    b.classList.toggle("on",(b.getAttribute("data-c")||"").toLowerCase()===(chosen||"").toLowerCase()));
+  d.querySelectorAll(".sw").forEach(b=>{
+    b.onclick=()=>{ chosen=b.getAttribute("data-c")||""; marks(); };
+  });
+  d.querySelector("#rgCustom").oninput=e=>{ chosen=e.target.value; marks(); };
+  d.querySelector("#rgCancel").onclick=closePop;
+  d.querySelector("#rgApply").onclick=()=>{
+    const newName=d.querySelector("#rgName").value.trim();
+    const renamed=newName && newName!==region;
+    const recoloured=(chosen||"")!==(cur||"");
+    if(!renamed && !recoloured){ closePop(); return; }
+    pushUndo(renamed?("rename of "+region):("colour of "+region));
+    let n=0;
+    if(renamed) n=renameRegion(region,newName);
+    if(recoloured) setRegionColor(renamed?newName:region, chosen);
+    markDirty(); layoutAndRender(); renderSide(); closePop();
+    toast(renamed ? ('Renamed to "'+newName+'" in '+n+' file'+(n===1?"":"s")+".")
+                  : "Colour changed. Save to write it to Regions.md.");
+  };
+  const inp=d.querySelector("#rgName");
+  inp.focus(); inp.select();
+  inp.onkeydown=e=>{ if(e.key==="Enter") d.querySelector("#rgApply").click(); };
+}
+
+/* ---- connect menu: shown when a node is dropped on another ---- */
+function openConnectMenu(aKey,bKey,clientX,clientY,onKeep,onSnapBack){
+  const a=S.locs.get(aKey), b=S.locs.get(bKey)||S.ghosts.get(bKey);
+  if(!a||!b){ onSnapBack(); return; }
+  const bIsGhost=!S.locs.has(bKey);
+  const d=openPop(
+    '<p class="mhead">'+esc(a.name)+' → '+esc(b.name)+'</p>'+
+    '<button class="opt" data-a="both">Route both ways<span class="gl">↔</span></button>'+
+    '<button class="opt" data-a="one">One-way, '+esc(a.name)+' → '+esc(b.name)+'<span class="gl">→</span></button>'+
+    (bIsGhost?"":'<button class="opt" data-a="oneback">One-way, '+esc(b.name)+' → '+esc(a.name)+'<span class="gl">←</span></button>')+
+    '<button class="opt" data-a="move">Just move it here<span class="gl">✥</span></button>'+
+    '<button class="cancel" data-a="cancel">Cancel</button>',
+    clientX, clientY);
+  d.querySelectorAll("[data-a]").forEach(btn=>{
+    btn.onclick=()=>{
+      const act=btn.getAttribute("data-a");
+      closePop();
+      if(act==="move"){ onKeep(); return; }
+      if(act==="cancel"){ onSnapBack(); return; }
+      onSnapBack();
+      pushUndo("route "+a.name+"–"+b.name);
+      if(act==="both") addConnection(aKey,bKey,true);
+      else if(act==="one") addConnection(aKey,bKey,false);
+      else if(act==="oneback") addConnection(bKey,aKey,false);
+      markDirty(); layoutAndRender(); renderSide();
+      toast("Route added. Save to write it to the files.");
+    };
+  });
+}
+
+/* ============================================================
+   CANVAS INTERACTION
+   ============================================================ */
+(function wireCanvas(){
+  const svg=$("map");
+  let mode=null, panStart=null, nodeDrag=null, moved=0, downTarget=null;
+
+  svg.addEventListener("pointerdown",e=>{
+    closePop();
+    moved=0; downTarget=e.target;
+    const g=e.target.closest && e.target.closest("g.node");
+    if(g){
+      const key=g.getAttribute("data-key");
+      const nd=S.layout&&S.layout.nodeByKey.get(key);
+      if(nd && !S.readOnly){
+        const w=screenToWorld(e.clientX,e.clientY);
+        mode="node";
+        nodeDrag={key,nd,offx:nd.x-w.x,offy:nd.y-w.y,prev:{x:nd.x,y:nd.y}};
+        svg.classList.add("moving");
+      } else { mode="tap"; }
+    } else {
+      mode="pan";
+      panStart={x:e.clientX,y:e.clientY,vx:S.view.x,vy:S.view.y};
+      svg.classList.add("drag");
+    }
+    svg.setPointerCapture(e.pointerId);
+  });
+
+  svg.addEventListener("pointermove",e=>{
+    if(mode==="pan"){
+      S.view.x=panStart.vx+(e.clientX-panStart.x);
+      S.view.y=panStart.vy+(e.clientY-panStart.y);
+      moved+=Math.abs(e.movementX)+Math.abs(e.movementY);
+      applyView();
+    } else if(mode==="node"){
+      const w=screenToWorld(e.clientX,e.clientY);
+      nodeDrag.nd.x=w.x+nodeDrag.offx;
+      nodeDrag.nd.y=w.y+nodeDrag.offy;
+      moved+=Math.abs(e.movementX)+Math.abs(e.movementY);
+      const over=moved>4?nodeAt(w.x,w.y,nodeDrag.key):null;
+      S.dropKey=over?over.key:null;
+      render();
+    }
+  });
+
+  const finish=e=>{
+    const wasNode=(mode==="node"), nd=nodeDrag&&nodeDrag.nd, mv=moved;
+    const dragKey=nodeDrag&&nodeDrag.key, prev=nodeDrag&&nodeDrag.prev;
+    const dropOn=S.dropKey;
+    S.dropKey=null;
+    svg.classList.remove("drag","moving");
+
+    if(wasNode && nd){
+      const snapBack=()=>{ nd.x=prev.x; nd.y=prev.y; render(); };
+      const keepHere=()=>{
+        if(nd.ghost){ snapBack(); return; }
+        pushUndo("move of "+nd.name);
+        setPinned(nd,nd.x,nd.y);
+        markDirty(); layoutAndRender(); renderSide();
+      };
+      mode=null; nodeDrag=null; panStart=null;
+      if(mv>4 && dropOn && !nd.ghost){
+        openConnectMenu(dragKey,dropOn,e.clientX,e.clientY,keepHere,snapBack);
+        return;
+      }
+      if(mv>4) keepHere();
+      else { snapBack(); selectNode(dragKey); }
+      return;
+    }
+    if(mode==="pan" && mv<=4){
+      const rg=downTarget&&downTarget.getAttribute&&downTarget.getAttribute("data-region");
+      if(rg && !S.readOnly) openRegionEditor(rg,e.clientX,e.clientY);
+      else if(rg) toast("Read-only - can't edit regions in this mode.");
+      else { S.selected=null; renderSide(); render(); }
+    } else if(mode==="tap"){
+      const g=downTarget.closest&&downTarget.closest("g.node");
+      if(g) selectNode(g.getAttribute("data-key"));
+    }
+    mode=null; panStart=null; nodeDrag=null;
+  };
+  svg.addEventListener("pointerup",finish);
+  svg.addEventListener("pointercancel",()=>{
+    if(nodeDrag){ nodeDrag.nd.x=nodeDrag.prev.x; nodeDrag.nd.y=nodeDrag.prev.y; }
+    S.dropKey=null; mode=null; panStart=null; nodeDrag=null;
+    svg.classList.remove("drag","moving"); render();
+  });
+  svg.addEventListener("wheel",e=>{
+    e.preventDefault();
+    const r=svg.getBoundingClientRect();
+    zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX-r.left, e.clientY-r.top);
+  },{passive:false});
+})();
+
+function selectNode(key){ S.selected=key; renderSide(); render(); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+function renderSide(){
+  const side=$("side");
+  if(!S.selected){
+    side.innerHTML=S.locs.size
+      ? '<p class="empty">Click a location to see what it connects to.<br><br>'+
+        'Drag one node onto another to connect them. Click a region\'s tinted area to rename or recolour it.</p>'
+      : '<p class="empty">Connect the folder to load your locations.</p>';
+    return;
+  }
+  const g=S.ghosts.get(S.selected);
+  if(g){
+    const refs=[...S.locs.values()].filter(l=>l.connections.some(c=>keyOf(c)===g.key));
+    side.innerHTML=
+      '<h3 class="serif">'+esc(g.name)+'</h3>'+
+      '<div class="meta">referenced, but no file yet</div>'+
+      '<div class="sec"><h4>Linked from</h4>'+
+        refs.map(r=>'<span class="chip"><span data-go="'+esc(r.key)+'">'+esc(r.name)+'</span></span>').join("")+
+      '</div>'+
+      (S.readOnly?"":'<button class="btn sm full" id="btnMake">Create this location</button>')+
+      '<p class="side-note">Makes a <code>seed</code> file from the location template, in the '+
+      'region of whatever links to it, already connected back.</p>';
+    side.querySelectorAll("[data-go]").forEach(el=>{
+      el.onclick=()=>{ const k=el.getAttribute("data-go"); selectNode(k); centerOn(k); };
+    });
+    const bm=$("btnMake"); if(bm) bm.onclick=()=>createFromGhost(g.key);
+    return;
+  }
+  const l=S.locs.get(S.selected);
+  if(!l){ side.innerHTML='<p class="empty">Gone.</p>'; return; }
+
+  const meta=[l.region,l.type,l.status].filter(Boolean).join(" · ")||"no region set";
+  let html='<h3 class="serif">'+esc(l.name)+'</h3><div class="meta">'+esc(meta)+'</div>';
+  if(l.isNew) html+='<p class="side-note" style="color:var(--ok)">New - not on disk until you Save.</p>';
+  if(l.tagline) html+='<p class="tagline">'+esc(l.tagline)+'</p>';
+  if(l.summary){
+    const short=l.summary.length>320?l.summary.slice(0,320).replace(/\s+\S*$/,"")+"…":l.summary;
+    html+='<p class="summary">'+esc(short)+'</p>';
+  }
+
+  html+='<div class="sec"><h4>Connections</h4>';
+  if(l.connections.length){
+    l.connections.forEach(c=>{
+      const ck=keyOf(c), exists=S.locs.has(ck);
+      html+='<span class="chip'+(exists?"":" miss")+'"><span data-go="'+esc(ck)+'">'+esc(c)+'</span>'+
+            (S.readOnly?"":'<span class="x" data-cut="'+esc(ck)+'" title="Remove this route">×</span>')+'</span>';
+    });
+  } else html+='<p class="empty">No connections listed - this place is an island on the map.</p>';
+  html+='</div>';
+
+  const incoming=[...S.locs.values()].filter(o=>o.key!==l.key&&o.connections.some(c=>keyOf(c)===l.key));
+  const oneWayIn=incoming.filter(o=>!l.connections.some(c=>keyOf(c)===o.key));
+  if(oneWayIn.length){
+    html+='<div class="sec"><h4>Links here (not returned)</h4>';
+    oneWayIn.forEach(o=>{
+      html+='<span class="chip"><span data-go="'+esc(o.key)+'">'+esc(o.name)+'</span>'+
+            (S.readOnly?"":'<span class="x" data-back="'+esc(o.key)+'" title="Add the return route" style="color:var(--ok)">↩</span>')+'</span>';
+    });
+    html+='<p class="side-note">These list '+esc(l.name)+' but aren\'t listed back. The ↩ adds the return route.</p></div>';
+  }
+
+  if(l.factions.length){
+    html+='<div class="sec"><h4>Factions here</h4>';
+    l.factions.forEach(f=>html+='<span class="chip" data-peek="'+esc(f)+'">'+esc(f)+'</span>');
+    html+='</div>';
+  }
+  if(l.notable.length){
+    html+='<div class="sec"><h4>Notable characters</h4>';
+    l.notable.forEach(f=>html+='<span class="chip" data-peek="'+esc(f)+'">'+esc(f)+'</span>');
+    html+='</div>';
+  }
+
+  html+='<div class="sec"><button class="btn sm" id="btnCenter">Recentre</button> '+
+        (l.pinned&&!S.readOnly?'<button class="btn sm" id="btnUnpin">Unpin</button>':"")+
+        '<p class="side-note">'+(l.pinned
+          ? 'Pinned at '+Math.round(l.px)+', '+Math.round(l.py)+' - in <code>map_x</code>/<code>map_y</code>.'
+          : 'Auto-placed. Drag it and Save to pin it.')+'</p></div>';
+
+  side.innerHTML=html;
+  side.querySelectorAll("[data-go]").forEach(el=>{
+    el.onclick=ev=>{ ev.stopPropagation(); const k=el.getAttribute("data-go");
+      if(S.locs.has(k)||S.ghosts.has(k)){ selectNode(k); centerOn(k); } };
+  });
+  side.querySelectorAll("[data-peek]").forEach(el=>{
+    el.onclick=ev=>{ ev.stopPropagation(); openPeek(el.getAttribute("data-peek"), el); };
+  });
+  side.querySelectorAll("[data-cut]").forEach(el=>{
+    el.onclick=ev=>{
+      ev.stopPropagation();
+      const target=el.getAttribute("data-cut");
+      const other=S.locs.get(target);
+      const mutual=!!(other&&other.connections.some(c=>keyOf(c)===l.key));
+      pushUndo("route removal");
+      removeConnection(l.key,target,mutual);
+      markDirty(); layoutAndRender(); renderSide();
+      toast("Route removed. Save to write it.");
+    };
+  });
+  side.querySelectorAll("[data-back]").forEach(el=>{
+    el.onclick=ev=>{
+      ev.stopPropagation();
+      pushUndo("return route");
+      addConnection(l.key, el.getAttribute("data-back"), false);
+      markDirty(); layoutAndRender(); renderSide();
+      toast("Return route added.");
+    };
+  });
+  const bc=$("btnCenter"); if(bc) bc.onclick=()=>centerOn(l.key);
+  const bu=$("btnUnpin"); if(bu) bu.onclick=()=>{
+    pushUndo("unpin of "+l.name);
+    clearPin(l); markDirty(); layoutAndRender(); renderSide();
+  };
+}
+
+/* ============================================================
+   SAVE / DISCARD
+   ============================================================ */
+function markDirty(){
+  const n=S.dirty.size+(S.regionsDirty?1:0);
+  $("btnSave").disabled=!n||S.readOnly;
+  $("btnDiscard").disabled=!n;
+  $("btnSave").textContent=n?("Save changes ("+n+")"):"Save changes";
+  $("fileLabel").classList.toggle("unsaved",!!n);
+}
+async function saveAll(){
+  if(!S.dirty.size&&!S.regionsDirty) return;
+  if(S.readOnly||!S.locDir){ toast("Read-only - can't write back here.", true); return; }
+  const failed=[];
+  for(const k of [...S.dirty]){
+    const l=S.locs.get(k);
+    if(!l){ S.dirty.delete(k); continue; }
+    try{
+      const h=l.handle||await S.locDir.getFileHandle(l.fileName,{create:true});
+      const text=bumpUpdated(l.text);
+      const w=await h.createWritable();
+      await w.write(text); await w.close();
+      l.handle=h; l.text=text; l.diskText=text; l.isNew=false;
+      deriveLoc(l);
+      S.dirty.delete(k);
+    }catch(e){ failed.push(l.name+": "+(e&&e.message)); }
+  }
+  if(S.regionsDirty){
+    try{
+      if(!S.worldDir) throw new Error("no World/ folder in reach");
+      const h=S.regionsHandle||await S.worldDir.getFileHandle("Regions.md",{create:true});
+      let text=S.regionsText||REGIONS_BOILERPLATE;
+      text=replaceRegionsTable(text, regionsTableMd());
+      text=bumpUpdated(text);
+      const w=await h.createWritable();
+      await w.write(text); await w.close();
+      S.regionsHandle=h; S.regionsText=text; S.regionsDiskText=text; S.regionsDirty=false;
+    }catch(e){ failed.push("Regions.md: "+(e&&e.message)); }
+  }
+  markDirty(); layoutAndRender(); renderSide();
+  if(failed.length) toast("Some files failed - "+failed.join(" · "), true);
+  else toast("Saved.");
+}
+function discardChanges(){
+  const n=S.dirty.size+(S.regionsDirty?1:0);
+  if(!n) return;
+  if(!confirm("Throw away "+n+" unsaved change"+(n===1?"":"s")+" and reload from disk?")) return;
+  HIST.past.length=0; HIST.future.length=0; syncHist();
+  loadAll().then(()=>toast("Reloaded from disk."));
+}
+function relayoutAll(){
+  const pinned=[...S.locs.values()].filter(l=>l.pinned);
+  if(!pinned.length){ toast("Nothing is pinned - it's already auto-arranged."); return; }
+  if(!confirm("Clear "+pinned.length+" saved pin"+(pinned.length===1?"":"s")+
+     " and auto-arrange everything?\n\nSave afterwards to remove map_x/map_y from the files.")) return;
+  pushUndo("clearing "+pinned.length+" pin"+(pinned.length===1?"":"s"));
+  pinned.forEach(clearPin);
+  markDirty(); layoutAndRender(); renderSide();
+}
+
+/* ============================================================
+   WARNINGS
+   ============================================================ */
+function checkWarnings(){
+  const w={oneway:[],missing:[],noregion:[],island:[]};
+  // a place is only an island if nothing goes out AND nothing comes in -
+  // a hub everything points at but which lists nothing is not "unrouted"
+  const incoming=new Set();
+  S.locs.forEach(l=>l.connections.forEach(c=>incoming.add(keyOf(c))));
+  S.locs.forEach(l=>{
+    if(!l.region) w.noregion.push({key:l.key,name:l.name});
+    if(!l.connections.length && !incoming.has(l.key)) w.island.push({key:l.key,name:l.name});
+    l.connections.forEach(c=>{
+      const ck=keyOf(c);
+      if(!S.locs.has(ck)){ w.missing.push({from:l.name,fromKey:l.key,to:c,toKey:ck}); return; }
+      const back=(S.locs.get(ck).connections||[]).some(x=>keyOf(x)===l.key);
+      if(!back) w.oneway.push({from:l.name,fromKey:l.key,to:c,toKey:ck});
+    });
+  });
+  S._warn=w;
+  const total=w.oneway.length+w.missing.length+w.noregion.length+w.island.length;
+  const btn=$("btnWarn");
+  btn.classList.toggle("warn",total>0);
+  btn.textContent=total?("⚠ "+total):"⚠";
+  btn.title=total?(total+" thing"+(total===1?"":"s")+" worth a look"):"Nothing worth flagging";
+}
+function showWarnings(){
+  const w=S._warn||{oneway:[],missing:[],noregion:[],island:[]};
+  let h="";
+  if(w.oneway.length){
+    h+="<h4>One-way routes ("+w.oneway.length+")</h4>";
+    w.oneway.forEach((it,i)=>{
+      h+='<div class="warnrow"><span><b>'+esc(it.from)+'</b> → '+esc(it.to)+
+         ' - '+esc(it.to)+" doesn't list "+esc(it.from)+' back</span>'+
+         (S.readOnly?"":'<button class="btn sm" data-fix="'+i+'">Make two-way</button>')+'</div>';
+    });
+  }
+  if(w.missing.length){
+    h+="<h4>Connections to a place with no file ("+w.missing.length+")</h4>";
+    w.missing.forEach((it,i)=>{
+      h+='<div class="warnrow"><span><b>'+esc(it.from)+'</b> → '+esc(it.to)+
+         ' - no <code>'+esc(it.to)+'.md</code> yet</span>'+
+         (S.readOnly?"":'<button class="btn sm" data-make="'+i+'">Create it</button>')+'</div>';
+    });
+  }
+  if(w.noregion.length){
+    h+="<h4>Locations with no region ("+w.noregion.length+")</h4>";
+    w.noregion.forEach(it=>{
+      h+='<div class="warnrow"><span><b>'+esc(it.name)+'</b> - set <code>region:</code> so it joins a cluster</span></div>';
+    });
+  }
+  if(w.island.length){
+    h+="<h4>Locations with no connections ("+w.island.length+")</h4>";
+    w.island.forEach(it=>{
+      h+='<div class="warnrow"><span><b>'+esc(it.name)+'</b> - nothing routes to or from it</span></div>';
+    });
+  }
+  if(!h) h='<p class="warn-none">Nothing to flag. Every route is mutual, every place has a region, and nothing points at a missing file.</p>';
+  const body=$("warnBody");
+  body.innerHTML=h;
+  body.querySelectorAll("[data-fix]").forEach(b=>{
+    b.onclick=()=>{
+      const it=w.oneway[+b.getAttribute("data-fix")];
+      pushUndo("return route");
+      addConnection(it.toKey,it.fromKey,false);
+      markDirty(); layoutAndRender(); renderSide(); showWarnings();
+      toast("Made two-way. Save to write it.");
+    };
+  });
+  body.querySelectorAll("[data-make]").forEach(b=>{
+    b.onclick=()=>{
+      const it=w.missing[+b.getAttribute("data-make")];
+      $("warn").close();
+      createFromGhost(it.toKey);
+    };
+  });
+  $("warn").showModal();
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function exportSvg(){
+  const L=S.layout;
+  if(!L){ toast("Nothing to export yet.", true); return; }
+  const src=$("map").cloneNode(true);
+  src.setAttribute("width",Math.round(L.width));
+  src.setAttribute("height",Math.round(L.height));
+  src.setAttribute("viewBox","0 0 "+Math.round(L.width)+" "+Math.round(L.height));
+  /* In a standalone SVG document, :root IS the svg element - so the theme
+     attribute has to ride along or a light-mode export would fall back to the
+     dark CSS variables while the hull colours stay baked light. */
+  src.setAttribute("data-theme", document.documentElement.dataset.theme);
+  src.setAttribute("data-look", document.documentElement.dataset.look || "field");
+  src.querySelector("#viewport").removeAttribute("transform");
+  const st=document.createElementNS(SVGNS,"style");
+  st.textContent=document.querySelector("style").textContent+"\nsvg{background:"+cssVar("--bg")+"}";
+  src.insertBefore(st,src.firstChild);
+  const blob=new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n',src.outerHTML],{type:"image/svg+xml"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download="world-map.svg"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("Exported world-map.svg");
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+const SYSTEM_LIGHT=window.matchMedia("(prefers-color-scheme: light)");
+const THEME_ICON={system:"◐",dark:"☾",light:"☀"};
+const THEME_TITLE={system:"Theme: follows your system",dark:"Theme: dark",light:"Theme: light"};
+function themePref(){
+  try{ const v=localStorage.getItem("cdb-theme"); return (v==="light"||v==="dark")?v:"system"; }
+  catch(e){ return "system"; }
+}
+function applyTheme(pref){
+  const dark=pref==="system"?!SYSTEM_LIGHT.matches:pref==="dark";
+  document.documentElement.dataset.theme=dark?"dark":"light";
+  $("btnTheme").textContent=THEME_ICON[pref];
+  $("btnTheme").title=THEME_TITLE[pref]+" - click to change";
+  if(S.layout) render();          // region colours are derived at draw time
+}
+$("btnTheme").onclick=()=>{
+  /* Flip to the opposite of what's actually on screen. The old
+     system -> dark -> light cycle spent a click doing nothing visible: on a
+     machine whose OS is dark, "follow system" and "dark" render identically,
+     so reaching light took two clicks while returning took one. Following the
+     system is still selectable from the dashboard's settings, which lists all
+     three explicitly. */
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{ if(next==="system") localStorage.removeItem("cdb-theme"); else localStorage.setItem("cdb-theme",next); }catch(e){}
+  applyTheme(next);
+};
+SYSTEM_LIGHT.addEventListener("change",()=>{ if(themePref()==="system") applyTheme("system"); });
+window.addEventListener("storage",e=>{
+  if(e.key===null||e.key==="cdb-look"){
+    let look=null;
+    try{ look=localStorage.getItem("cdb-look"); }catch(err){}
+    document.documentElement.dataset.look=(["atlas","board","iris","rose","slate"].indexOf(look) >= 0) ? look : "field";
+  }
+  if(e.key===null||e.key==="cdb-theme"||e.key==="cdb-look") applyTheme(themePref());
+});
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+$("btnConnect").onclick=connectFolder;
+$("btnReload").onclick=()=>{ if(S.locDir) loadAll(); else connectFolder(); };
+$("btnSave").onclick=saveAll;
+$("btnDiscard").onclick=discardChanges;
+$("btnUndo").onclick=undo;
+$("btnRedo").onclick=redo;
+$("btnWarn").onclick=showWarnings;
+$("btnExport").onclick=exportSvg;
+$("btnHelp").onclick=()=>$("help").showModal();
+$("zIn").onclick=()=>zoomBy(1.2);
+$("zOut").onclick=()=>zoomBy(1/1.2);
+$("zFit").onclick=()=>fit();
+$("btnRelayout").onclick=relayoutAll;
+$("chkRegions").onchange=e=>{ S.showRegions=e.target.checked; render(); };
+$("chkGhosts").onchange=e=>{ S.showGhosts=e.target.checked; layoutAndRender(); };
+
+window.addEventListener("keydown",e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement&&document.activeElement.tagName);
+  if(typing) return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key.toLowerCase()==="s"){ e.preventDefault(); saveAll(); }
+  else if(mod&&e.key.toLowerCase()==="z"&&!e.shiftKey){ e.preventDefault(); undo(); }
+  else if(mod&&(e.key.toLowerCase()==="y"||(e.key.toLowerCase()==="z"&&e.shiftKey))){ e.preventDefault(); redo(); }
+});
+window.addEventListener("beforeunload",e=>{
+  if(S.dirty.size||S.regionsDirty){ e.preventDefault(); e.returnValue=""; }
+});
+window.addEventListener("resize",()=>{ if(S.layout) applyView(); });
+
+applyTheme(themePref());
+if(!FS_OK){ $("fsLabel").textContent="load folder (read-only)"; }
+else { restoreFolder(); }
+
+/* ============================================================
+   TOOL NAV DRAWER
+   ============================================================
+   The three-line button in the header opens a list of every tool. Pure
+   navigation: it stores nothing and reads nothing from the database folder,
+   so it works before a folder is ever connected.
+
+   NAV_TOOLS is repeated in each tool on purpose - these pages are standalone
+   by design, with no build step and no shared runtime. Adding a tool later is
+   one line here, in each file.
+   ============================================================ */
+const NAV_TOOLS = [
+  {g:"⌂", label:"Home",        href:"index.html"},
+  {g:"✎", label:"Writer",      href:"character-writer.html"},
+  {g:"▤", label:"Library",     href:"library.html"},
+  {g:"⁂", label:"Family tree", href:"family-tree.html"},
+  {g:"◎", label:"World map",   href:"world-map.html"},
+  {g:"¶", label:"Manuscript",  href:"manuscript.html"},
+  {g:"▣", label:"Art board",   href:"art-board.html"},
+  {g:"⌕", label:"Search",      href:"search.html"},
+  {g:"◷", label:"Timeline",    href:"timeline.html"}
+];
+const NAV_HERE = "world-map.html";
+/* This page lives in Tools/; the dashboard is one level up. NAV_TOOLS
+   entries keep the bare filename as their stable id (the saved order is
+   keyed on it), and these two turn an id into a link from here. */
+const NAV_BASE = "";
+const NAV_HOME = "../index.html";
+
+(function(){
+  const btn = document.getElementById("btnNav");
+  if(!btn) return;
+
+  const scrim = document.createElement("div");
+  scrim.id = "navScrim";
+
+  const drawer = document.createElement("nav");
+  drawer.id = "navDrawer";
+  drawer.setAttribute("aria-label", "Tools");
+
+  const h = document.createElement("h2");
+  h.textContent = "Tools";
+  drawer.appendChild(h);
+
+  /* The list order is yours - drag a row to move it. The order rides one
+     shared localStorage key so every tool shows the same list (pure UI
+     convenience, no world data - GROUND-RULES rule 1). A tool missing from
+     the saved order - a future new one - keeps its default place. */
+  const NAV_ORDER_KEY = "cdb-navorder";
+  function navOrder(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY) || "null"); }catch(e){}
+    if(!Array.isArray(saved)) return NAV_TOOLS.slice();
+    const byHref = new Map(NAV_TOOLS.map(t=>[t.href, t]));
+    const out = [];
+    saved.forEach(href=>{ const t = byHref.get(href); if(t){ out.push(t); byHref.delete(href); } });
+    NAV_TOOLS.forEach(t=>{ if(byHref.has(t.href)) out.push(t); });
+    return out;
+  }
+  function saveOrder(list){
+    try{ localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(list.map(t=>t.href))); }catch(e){}
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "navfoot";
+  foot.textContent = "Drag a row to reorder - every tool follows. They all read the same folder: connect it once and they remember it.";
+
+  let dragHref = null;
+  function renderNav(){
+    [...drawer.querySelectorAll("a, span.navhere")].forEach(el=>el.remove());
+    navOrder().forEach(t=>{
+      const here = t.href === NAV_HERE;
+      const el = document.createElement(here ? "span" : "a");
+      if(here){ el.className = "navhere"; el.setAttribute("aria-current","page"); }
+      else { el.href = t.href === "index.html" ? NAV_HOME : NAV_BASE + t.href; }
+      const g = document.createElement("span"); g.className = "g"; g.textContent = t.g;
+      const s = document.createElement("span"); s.textContent = t.label;
+      el.append(g, s);
+      el.draggable = true;
+      el.title = "Drag to reorder";
+      el.addEventListener("dragstart", e=>{
+        dragHref = t.href;
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", t.href); }catch(err){}
+      });
+      el.addEventListener("dragover", e=>{ if(dragHref && dragHref !== t.href) e.preventDefault(); });
+      el.addEventListener("drop", e=>{
+        e.preventDefault();
+        if(!dragHref || dragHref === t.href) return;
+        const cur = navOrder();
+        const from = cur.findIndex(x=>x.href === dragHref);
+        const to = cur.findIndex(x=>x.href === t.href);
+        if(from < 0 || to < 0) return;
+        const moved = cur.splice(from, 1)[0];
+        cur.splice(to, 0, moved);
+        saveOrder(cur);
+        dragHref = null;
+        renderNav();
+      });
+      el.addEventListener("dragend", ()=>{ dragHref = null; });
+      drawer.insertBefore(el, foot);
+    });
+  }
+
+  drawer.appendChild(foot);
+  renderNav();
+  /* a reorder made in another open tab shows up here too */
+  window.addEventListener("storage", e=>{
+    if(e.key === null || e.key === NAV_ORDER_KEY) renderNav();
+  });
+
+  document.body.append(scrim, drawer);
+
+  let open = false;
+  function setNav(next){
+    open = next;
+    scrim.classList.toggle("open", open);
+    drawer.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if(open){
+      const first = drawer.querySelector("a");
+      if(first) first.focus();
+    } else {
+      btn.focus();
+    }
+  }
+
+  btn.setAttribute("aria-expanded","false");
+  btn.onclick = e => { e.stopPropagation(); setNav(!open); };
+  scrim.onclick = () => setNav(false);
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape" && open){ e.stopPropagation(); setNav(false); }
+  }, true);
+})();
+</script>
+
+<!-- cloud storage: makes Supabase look like the folder these tools expect -->
+<script src="/world-codex/config.js"></script>
+<script src="/world-codex/cloud-fs.js"></script>
+</body>
+</html>

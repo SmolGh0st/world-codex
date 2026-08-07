@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuscript - Character Database</title>
+<script>
+/* Theme, applied before first paint - identical boot script to every other
+   tool, reading the same two shared keys. See index.html for the long
+   version of this comment. */
+(function(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cdb-theme"); }catch(e){}
+  if(pref !== "light" && pref !== "dark") pref = null;
+  var dark = pref ? pref==="dark"
+                  : !window.matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  var look = null;
+  try{ look = localStorage.getItem("cdb-look"); }catch(e){}
+  if(["atlas","board","iris","rose","slate"].indexOf(look) < 0) look = "field";
+  document.documentElement.dataset.look = look;
+})();
+</script>
+<style>
+  :root{
+    --bg:#14120f; --panel:#1c1a16; --panel-2:#232019;
+    --line:#332e25; --line-soft:#28241d;
+    --ink:#ece4d6; --ink-dim:#a99e8b; --ink-faint:#6f665a;
+    --accent:#c9a227; --accent-soft:#3a3018; --accent-line:#4a3d1d;
+    --accent-hover:#dcb433; --on-accent:#1a1508; --btn-hover:#2a251b;
+    --danger:#c96a4a; --danger-ink:#f0b4a0; --ok:#7fa860;
+    --alt:#a48ee0; --alt-soft:#241c38; --alt-line:#453166;
+    --shadow:rgba(0,0,0,.45); --radius:10px; color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f3ea; --panel:#fffdf8; --panel-2:#efe9dc;
+    --line:#dbd1bd; --line-soft:#e9e1d1;
+    --ink:#2a251c; --ink-dim:#5d5548; --ink-faint:#877d6d;
+    --accent:#8a6d10; --accent-soft:#f2e7c2; --accent-line:#d8c68a;
+    --accent-hover:#a1811d; --on-accent:#fffdf6; --btn-hover:#e7dfcf;
+    --danger:#a8431f; --danger-ink:#8c3316; --ok:#4e7233;
+    --alt:#6b46b3; --alt-soft:#ece3fa; --alt-line:#cbb8ec;
+    --shadow:rgba(60,50,30,.18); color-scheme:light;
+  }
+  :root[data-look="atlas"]{
+    --bg:#111814; --panel:#19231d; --panel-2:#212d26;
+    --line:#35453b; --line-soft:#273229;
+    --ink:#e2dec9; --ink-dim:#a39d87; --ink-faint:#6e796e;
+    --accent:#4fb896; --accent-soft:#163529; --accent-line:#2b5546;
+    --accent-hover:#65cbaa; --on-accent:#062318; --btn-hover:#243128;
+  }
+  :root[data-look="atlas"][data-theme="light"]{
+    --bg:#e7e7d8; --panel:#f4f4e8; --panel-2:#dfdfca;
+    --line:#c2c2a6; --line-soft:#d6d6c0;
+    --ink:#35322a; --ink-dim:#5e5947; --ink-faint:#83816b;
+    --accent:#1d6b58; --accent-soft:#d7eae1; --accent-line:#a6ccbd;
+    --accent-hover:#27816a; --on-accent:#f5fbf8; --btn-hover:#e5e5d2;
+    --shadow:rgba(55,65,50,.18);
+  }
+  :root[data-look="board"]{
+    --bg:#171310; --panel:#201a15; --panel-2:#2a2219;
+    --line:#3a2f24; --line-soft:#2b231c;
+    --ink:#e6dcc6; --ink-dim:#a69c85; --ink-faint:#786b57;
+    --accent:#b58f4a; --accent-soft:#372a15; --accent-line:#584421;
+    --accent-hover:#c8a35e; --on-accent:#251803; --btn-hover:#2f261d;
+  }
+  :root[data-look="board"][data-theme="light"]{
+    --bg:#e8dcc5; --panel:#f2e7d1; --panel-2:#dfd0b3;
+    --line:#c5af85; --line-soft:#d7c7a6;
+    --ink:#2e2822; --ink-dim:#5d5343; --ink-faint:#7c6e54;
+    --accent:#6e5624; --accent-soft:#ecdfbc; --accent-line:#cab383;
+    --accent-hover:#83682a; --on-accent:#fdf9ee; --btn-hover:#e7dabe;
+    --shadow:rgba(70,55,30,.18);
+  }
+  :root[data-look="iris"]{
+    --bg:#151218; --panel:#1d1924; --panel-2:#262030;
+    --line:#383046; --line-soft:#2b2537;
+    --ink:#e8e2f0; --ink-dim:#a79fb6; --ink-faint:#6f6880;
+    --accent:#a78bdb; --accent-soft:#2c2344; --accent-line:#473a66;
+    --accent-hover:#baa2e8; --on-accent:#170f26; --btn-hover:#2a2438;
+  }
+  :root[data-look="iris"][data-theme="light"]{
+    --bg:#f2eef7; --panel:#fcfaff; --panel-2:#e7e0f0;
+    --line:#cfc3e0; --line-soft:#ded4ea;
+    --ink:#2b2438; --ink-dim:#5a5168; --ink-faint:#837a92;
+    --accent:#6b4fa8; --accent-soft:#e6dcf5; --accent-line:#c3aee3;
+    --accent-hover:#7d61bd; --on-accent:#f9f6ff; --btn-hover:#e3dbef;
+    --shadow:rgba(60,50,80,.18);
+  }
+  :root[data-look="rose"]{
+    --bg:#191214; --panel:#221a1d; --panel-2:#2c2226;
+    --line:#443037; --line-soft:#332529;
+    --ink:#eee0e4; --ink-dim:#b39ba3; --ink-faint:#7d6970;
+    --accent:#d4899b; --accent-soft:#3d222b; --accent-line:#5e3644;
+    --accent-hover:#e29fb0; --on-accent:#260f16; --btn-hover:#2f2529;
+  }
+  :root[data-look="rose"][data-theme="light"]{
+    --bg:#f7eef0; --panel:#fffafb; --panel-2:#f0e1e5;
+    --line:#ddc3ca; --line-soft:#ead5da;
+    --ink:#35262b; --ink-dim:#645057; --ink-faint:#8f7a81;
+    --accent:#a04360; --accent-soft:#f4dbe3; --accent-line:#dfadbd;
+    --accent-hover:#b55573; --on-accent:#fff7f9; --btn-hover:#eddde1;
+    --shadow:rgba(80,50,60,.18);
+  }
+  :root[data-look="slate"]{
+    --bg:#10141a; --panel:#171d26; --panel-2:#1f2733;
+    --line:#303c4d; --line-soft:#26303e;
+    --ink:#dde4ee; --ink-dim:#94a1b4; --ink-faint:#627082;
+    --accent:#6da7d8; --accent-soft:#16293c; --accent-line:#2a4a68;
+    --accent-hover:#85b9e4; --on-accent:#06131f; --btn-hover:#232d3a;
+  }
+  :root[data-look="slate"][data-theme="light"]{
+    --bg:#e9edf2; --panel:#f7f9fc; --panel-2:#dde4ec;
+    --line:#bcc8d6; --line-soft:#d2dae4;
+    --ink:#27303b; --ink-dim:#4f5b6a; --ink-faint:#77828f;
+    --accent:#2c6394; --accent-soft:#d9e7f3; --accent-line:#a5c4dd;
+    --accent-hover:#3a76ab; --on-accent:#f6fafd; --btn-hover:#dbe2ea;
+    --shadow:rgba(45,60,80,.18);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .serif{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  header{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:none;
+    padding:10px 18px;border-bottom:1px solid var(--line);background:var(--panel);
+  }
+  a.brand{display:block;color:var(--ink)}
+  a.brand:hover{text-decoration:none;color:var(--accent)}
+  .brand{font-weight:650;letter-spacing:.2px}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .grow{flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);display:inline-block}
+  .dot.on{background:var(--ok)}
+  .dot.warn{background:var(--accent)}
+
+  button{font:inherit;color:inherit}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer;transition:.13s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent);background:var(--btn-hover)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+  .btn.primary:hover{background:var(--accent-hover)}
+  .btn.sm{padding:4px 10px;font-size:12.5px;border-radius:6px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.branch{background:var(--alt-soft);border-color:var(--alt-line);color:var(--alt)}
+  .btn.branch:hover{background:var(--alt-line);color:var(--ink)}
+
+  .tag{
+    font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;font-weight:600;
+    border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--ink-faint);
+  }
+  .tag.ready{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
+  .tag.alt{color:var(--alt);border-color:var(--alt-line);background:var(--alt-soft)}
+  .tag.side{color:var(--ink-dim);border-color:var(--line);background:var(--panel-2);font-style:italic}
+
+  .app{flex:1;display:flex;min-height:0}
+
+  /* ---------- sidebar ------------------------------------------------------ */
+  .sidebar{
+    width:290px;flex:none;overflow-y:auto;padding:14px;
+    border-right:1px solid var(--line);background:var(--panel);
+  }
+  .sidebar h2{
+    margin:4px 6px 8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  .story-item{
+    padding:9px 10px;border-radius:8px;cursor:pointer;
+    display:flex;justify-content:space-between;gap:8px;align-items:baseline;
+  }
+  .story-item:hover{background:var(--btn-hover)}
+  .story-item.on{background:var(--accent-soft)}
+  .story-item .nm{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px}
+  .story-item .ct{font-size:11.5px;color:var(--ink-faint);white-space:nowrap}
+  .au-dot{
+    font-size:9.5px;letter-spacing:.4px;font-weight:700;color:var(--alt);
+    border:1px solid var(--alt-line);background:var(--alt-soft);
+    border-radius:4px;padding:1px 4px;line-height:1.3;
+  }
+  .universe-banner{
+    flex:none;padding:7px 22px;font-size:12.5px;font-weight:600;letter-spacing:.3px;
+    border-bottom:1px solid var(--alt-line);background:var(--alt-soft);color:var(--alt);
+  }
+
+  .chapter-list{margin:2px 0 14px 4px;display:flex;flex-direction:column;gap:1px}
+  .section-label{
+    font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-faint);
+    margin:9px 0 2px 8px;
+  }
+  .chapter-row{
+    padding:6px 9px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink-dim);
+    display:flex;justify-content:space-between;gap:6px;align-items:baseline;
+  }
+  .chapter-row:hover{background:var(--btn-hover)}
+  .chapter-row.on{background:var(--accent-soft);color:var(--ink);font-weight:600}
+  .chapter-row .wc{font-size:11px;color:var(--ink-faint);white-space:nowrap}
+  .new-chapter{
+    margin:4px 0 14px 4px;padding:6px 9px;border-radius:6px;cursor:pointer;
+    font-size:12.5px;color:var(--ink-faint);border:1px dashed var(--line);text-align:center;
+  }
+  .new-chapter:hover{color:var(--accent);border-color:var(--accent)}
+  .start-drafting{
+    margin:4px 4px 14px;padding:12px;border:1px dashed var(--line);border-radius:8px;
+    font-size:12.5px;color:var(--ink-faint);text-align:center;
+  }
+  .empty-side{color:var(--ink-faint);font-size:12.5px;padding:8px 6px}
+
+  /* ---------- editor -------------------------------------------------------- */
+  .editor{flex:1;display:flex;flex-direction:column;min-width:0}
+  .editor-empty{
+    margin:auto;color:var(--ink-faint);text-align:center;padding:40px;max-width:44ch;
+  }
+  .editor-bar{
+    display:flex;gap:9px;flex-wrap:wrap;align-items:center;flex:none;
+    padding:12px 22px;border-bottom:1px solid var(--line);background:var(--panel);
+  }
+  .editor-bar input[type=text], .editor-bar select{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:6px 10px;border-radius:7px;font:inherit;font-size:13.5px;
+  }
+  .editor-bar input[type=text]:focus, .editor-bar select:focus{outline:none;border-color:var(--accent)}
+  #fTitle{min-width:180px;flex:1}
+  #fSection{width:120px}
+  #fChapter{width:64px}
+  .editor-bar .lbl{font-size:11px;color:var(--ink-faint);margin-right:-4px}
+
+  /* ---------- help bubbles ------------------------------------------------
+     A "?" beside anything whose meaning isn't obvious from its label. Click
+     for a popover; Esc or a click elsewhere closes it. Same pattern and same
+     look as character-writer.html's. */
+  .helpbub{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:15px;height:15px;padding:0;flex:none;
+    border-radius:50%;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--ink-faint);font:700 10.5px/1 inherit;
+    cursor:pointer;vertical-align:middle;
+  }
+  .helpbub:hover,.helpbub:focus{border-color:var(--accent);color:var(--accent);outline:none}
+  .helppop{
+    position:fixed;z-index:200;max-width:290px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;box-shadow:0 14px 34px var(--shadow);
+    font:400 12.5px/1.55 inherit;color:var(--ink-dim);
+  }
+  .editor-body{flex:1;display:flex;flex-direction:column;gap:14px;padding:20px 26px;overflow-y:auto;min-height:0}
+  textarea{
+    width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    color:var(--ink);font:inherit;padding:16px 18px;resize:vertical;
+  }
+  textarea.prose{
+    flex:1;min-height:280px;font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+    font-size:16.5px;line-height:1.75;
+  }
+  textarea.prose:focus, textarea.notes:focus{outline:none;border-color:var(--accent)}
+  textarea.notes{min-height:90px;font-size:13.5px}
+  .notes-label{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-faint);margin:0 0 -6px}
+  .foot-row{display:flex;align-items:center;gap:12px;flex:none;padding:0 26px 18px;font-size:12.5px;color:var(--ink-faint)}
+  .foot-row .unsaved{color:var(--danger-ink)}
+
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 15px;font-size:13.5px;opacity:0;pointer-events:none;transition:.18s;max-width:min(520px,88vw);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%)}
+  #toast.bad{border-color:var(--danger);color:var(--danger-ink)}
+
+  /* ---------- tool nav drawer ---------------------------------------------
+     The three-line button at the far left of every header opens the same
+     list of every tool, so you can move between them without going via the
+     home page. Identical markup, CSS and behaviour in all of them; the tool
+     you're already in is marked and not a link.
+
+     The list is duplicated per file rather than shared, because these pages
+     are deliberately standalone - no build step, no common runtime. Adding a
+     tool later means one line in each NAV_TOOLS array. */
+  .navbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:32px;flex:none;border-radius:8px;cursor:pointer;
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:0;transition:.13s;
+  }
+  .navbtn span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:1px}
+  .navbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .navbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #navScrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .16s;
+  }
+  #navScrim.open{opacity:1;pointer-events:auto}
+  #navDrawer{
+    position:fixed;top:0;left:0;bottom:0;width:248px;z-index:301;
+    background:var(--panel);border-right:1px solid var(--line);
+    box-shadow:0 0 40px var(--shadow);
+    transform:translateX(-101%);transition:transform .18s ease;
+    display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;
+  }
+  #navDrawer.open{transform:none}
+  #navDrawer h2{
+    margin:2px 8px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  #navDrawer a,#navDrawer span.navhere{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+    color:var(--ink);font-size:14px;text-decoration:none;
+  }
+  #navDrawer a:hover{background:var(--btn-hover);text-decoration:none;color:var(--ink)}
+  #navDrawer a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  #navDrawer span.navhere{background:var(--accent-soft);font-weight:600}
+  #navDrawer .g{width:20px;text-align:center;color:var(--accent);font-size:15px;flex:none}
+  #navDrawer .navfoot{
+    margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line-soft);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5;
+  }
+  @media (prefers-reduced-motion:reduce){
+    #navDrawer,#navScrim{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="navbtn" id="btnNav" title="All tools" aria-label="All tools"><span></span><span></span><span></span></button>
+  <a class="brand" href="index.html">Manuscript<small>character database</small></a>
+  <button class="btn" id="btnConnect"><span class="dot" id="fsDot"></span><span id="fsLabel">connect folder</span></button>
+  <div class="grow"></div>
+  <button class="btn" id="btnTheme" title="Light / dark" aria-label="Light or dark">☾</button>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="empty-side">Connect your Character Database folder to see your stories.</div>
+  </aside>
+
+  <section class="editor" id="editor">
+    <div class="editor-empty">Pick a chapter on the left, or start a new one, to write here.</div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const FS_OK = typeof window.showDirectoryPicker === "function";
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  root:null, saved:null,
+  storiesDir:null,
+  stories:[],          // [{filename, folderKey, name, status, manuscript_folder}]
+  chapters:[],         // flat list across every story, see parseChapterFile()
+  dirHandles:new Map(),// folderKey -> manuscript folder's DirectoryHandle
+  activeStory:null,    // folderKey
+  activeChapter:null,  // filename
+  activeHandle:null,   // FileSystemFileHandle for the open chapter
+  dirty:false
+};
+
+function today(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+
+/* ============================================================
+   HELP BUBBLES - the "?" beside labels that need a sentence of explaining.
+   ============================================================ */
+const HELP = {
+  section:"Optional. A layer above chapters, for stories split into parts - "+
+    "\"Part One\", \"Act I\", \"Before the War\". Chapters 1-3 might all sit in Part One, "+
+    "then Part Two starts at chapter 4. If your story is just a run of chapters with no "+
+    "bigger divisions, leave this blank forever - those chapters group under \"No section\" "+
+    "and nothing is lost.",
+  chapter:"This chapter's number, used to order it within its section. Free text, so \"3.5\" "+
+    "for an inserted chapter or \"Interlude\" both work - ordering is numeric where it can be "+
+    "and alphabetical otherwise.",
+  status:"How finished this one chapter is: draft, revised, or final. Separate from the "+
+    "story's own status - a story can be \"drafting\" while chapter 1 is already \"final\".",
+  title:"This chapter's name, shown in the sidebar and used in its heading. Optional - a "+
+    "chapter with just a number is fine.",
+  notes:"Private working notes: pacing, what needs fixing, continuity to check. Kept under a "+
+    "## Notes heading, which never publishes to the future website and is excluded from the "+
+    "word count, so anything here is safe to write freely.",
+  branch:"Forks a new alternate-universe story starting from this chapter. Copies the story "+
+    "bible and every chapter up to and including this one into a new story, so the branch "+
+    "begins identical and diverges from here. The original is left completely untouched, and "+
+    "the branch keeps the same timeline position so it lands beside its parent on the timeline."
+};
+
+function closeHelpPop(){
+  const p = document.getElementById("helpPop");
+  if(p) p.remove();
+}
+
+function helpBubble(text, label){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "helpbub";
+  b.textContent = "?";
+  b.title = "What's this?";
+  b.setAttribute("aria-label", "What is " + (label || "this field") + "?");
+  b.onclick = e => {
+    e.preventDefault(); e.stopPropagation();
+    const open = document.getElementById("helpPop");
+    const same = open && open.dataset.for === text;
+    closeHelpPop();
+    if(same) return;
+    const p = document.createElement("div");
+    p.className = "helppop"; p.id = "helpPop"; p.dataset.for = text;
+    p.textContent = text;
+    document.body.appendChild(p);
+    const r = b.getBoundingClientRect(), pad = 10;
+    p.style.left = Math.max(pad, Math.min(r.left, window.innerWidth - p.offsetWidth - pad)) + "px";
+    let top = r.bottom + 7;
+    if(top + p.offsetHeight > window.innerHeight - pad) top = Math.max(pad, r.top - p.offsetHeight - 7);
+    p.style.top = top + "px";
+  };
+  return b;
+}
+
+document.addEventListener("click", e=>{
+  const p = document.getElementById("helpPop");
+  if(p && !p.contains(e.target) && !e.target.closest(".helpbub")) closeHelpPop();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeHelpPop(); });
+
+let toastTimer = null;
+function toast(msg, bad){
+  const t = $("toast");
+  t.textContent = msg; t.className = "show" + (bad ? " bad" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = ""; }, 4200);
+}
+
+/* ============================================================
+   FOLDER - identical pattern to every other tool. readwrite because this
+   tool exists to write chapter files, same reasoning as art-board.html's
+   drag-and-drop.
+   ============================================================ */
+const FOLDER_DB = "cdb-folder", FOLDER_STORE = "handles", FOLDER_KEY = "root";
+const SUBFOLDER_NAMES = ["characters","world","locations","factions","stories","art","templates","claude chat history"];
+
+function folderTx(mode){
+  return new Promise((res,rej)=>{
+    let rq;
+    try{ rq = indexedDB.open(FOLDER_DB, 1); }catch(e){ rej(e); return; }
+    rq.onupgradeneeded = ()=>rq.result.createObjectStore(FOLDER_STORE);
+    rq.onerror = ()=>rej(rq.error);
+    rq.onsuccess = ()=>{
+      const db = rq.result, tx = db.transaction(FOLDER_STORE, mode);
+      tx.oncomplete = ()=>db.close();
+      res(tx.objectStore(FOLDER_STORE));
+    };
+  });
+}
+async function rememberFolder(handle){
+  try{ (await folderTx("readwrite")).put(handle, FOLDER_KEY); }catch(e){}
+}
+async function recallFolder(){
+  try{
+    const store = await folderTx("readonly");
+    return await new Promise(res=>{
+      const q = store.get(FOLDER_KEY);
+      q.onsuccess = ()=>res(q.result || null);
+      q.onerror   = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+async function looksLikeRoot(h){
+  try{ await h.getFileHandle("README.md"); return true; }catch(e){}
+  try{ await h.getDirectoryHandle("Templates"); return true; }catch(e){}
+  return false;
+}
+
+async function useFolder(handle, quiet){
+  let ok = false;
+  try{ await handle.getDirectoryHandle("Stories"); ok = true; }catch(e){}
+  if(!ok){
+    if(!quiet) toast('No "Stories" folder in "'+handle.name+'". Pick the Character Database folder.', true);
+    return false;
+  }
+  S.root = handle; S.saved = handle;
+  rememberFolder(handle);
+  $("fsDot").className = "dot on"; $("fsLabel").textContent = handle.name;
+  $("btnConnect").querySelector("span:last-child").textContent = "change folder";
+  await scan();
+  return true;
+}
+
+async function connectFolder(){
+  if(!FS_OK){ toast("This tool writes files directly, which needs Chrome or Edge (File System Access API).", true); return; }
+
+  if(S.saved && S.saved !== S.root){
+    try{
+      if(await S.saved.requestPermission({mode:"readwrite"}) === "granted"){
+        if(await useFolder(S.saved)) return;
+      }
+    }catch(e){}
+  }
+  try{
+    const h = await window.showDirectoryPicker({mode:"readwrite"});
+    if(!(await looksLikeRoot(h))){
+      const why = SUBFOLDER_NAMES.includes(h.name.toLowerCase())
+        ? '"' + h.name + '" looks like a subfolder inside the database, not the database itself.'
+        : '"' + h.name + '" doesn’t look like the database root (no README.md or Templates folder in it).';
+      if(confirm(why + "\n\nOK = pick a different folder · Cancel = use this one anyway")){
+        connectFolder(); return;
+      }
+    }
+    await useFolder(h);
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    toast("Couldn't open the folder: " + (e && e.message), true);
+  }
+}
+
+async function restoreFolder(){
+  if(!FS_OK) return;
+  const h = await recallFolder();
+  if(!h) return;
+  S.saved = h;
+  let perm = "prompt";
+  try{ perm = await h.queryPermission({mode:"readwrite"}); }catch(e){}
+  if(perm === "granted" && await useFolder(h, true)) return;
+  $("fsDot").className = "dot warn";
+  $("fsLabel").textContent = '"'+h.name+'" - needs a click';
+  $("btnConnect").querySelector("span:last-child").textContent = "reconnect";
+}
+
+/* ============================================================
+   YAML helpers - same quoting rules as character-writer.html's buildMd,
+   kept small since a chapter's frontmatter is a handful of scalar fields.
+   ============================================================ */
+function yq(v){
+  const s = String(v==null ? "" : v);
+  if(s === "") return "";
+  if(/^-?\d+(\.\d+)?$/.test(s)) return s;
+  if(/[:#\[\]{}",&*?|<>=!%@`]/.test(s) || /^\s|\s$/.test(s)) return JSON.stringify(s);
+  return s;
+}
+function yqLink(v){
+  const s = String(v||"").trim();
+  if(!s) return "";
+  return JSON.stringify(/^\[\[/.test(s) ? s : "[["+s+"]]");
+}
+function stripLink(s){
+  const m = String(s||"").trim().match(/^\[\[(.+?)\]\]$/);
+  return m ? m[1] : String(s||"").trim();
+}
+function stripQuotes(v){
+  v = v.trim();
+  if((v.startsWith('"')&&v.endsWith('"')) || (v.startsWith("'")&&v.endsWith("'"))) return v.slice(1,-1);
+  return v;
+}
+
+/* ============================================================
+   CHAPTER FILES - parse / build, mirroring Templates/chapter-template.md.
+   Word count is always computed from the prose itself and stops at
+   "## Notes", same rule the dashboard uses (## Scratch never publishes
+   elsewhere in this database; ## Notes on a chapter is its sibling).
+   ============================================================ */
+function parseChapterFile(text){
+  const c = { story:"", section:"", section_order:"", chapter:"", title:"",
+              status:"draft", word_count:"", created:"", updated:"",
+              body:"", notes:"" };
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  let rest = text;
+  if(fm){
+    rest = text.slice(fm[0].length);
+    fm[1].split(/\r?\n/).forEach(line=>{
+      if(!line.trim() || /^\s*#/.test(line)) return;
+      const i = line.indexOf(":");
+      if(i<0) return;
+      const k = line.slice(0,i).trim();
+      let v = stripQuotes(line.slice(i+1).replace(/\s+#.*$/,"").trim());
+      if(k === "story") v = stripLink(v);
+      if(k in c) c[k] = v;
+    });
+  }
+  const lines = rest.split(/\r?\n/);
+  let i = 0;
+  while(i < lines.length && !lines[i].trim()) i++;
+  if(lines[i] !== undefined && /^#\s+/.test(lines[i])) i++;   // drop the "# Chapter N - Title" heading
+  const remainder = lines.slice(i).join("\n");
+  const parts = remainder.split(/^##\s+Notes\s*$/mi);
+  c.body = (parts[0]||"").replace(/^\n+/,"").replace(/\s+$/,"");
+  c.notes = (parts[1]||"").replace(/^\n+/,"").replace(/\s+$/,"");
+  return c;
+}
+
+function wordsIn(text){
+  return (String(text||"").match(/\S+/g) || []).length;
+}
+
+function chapterHeading(c){
+  const bits = [];
+  if(String(c.chapter||"").trim()) bits.push("Chapter " + c.chapter);
+  if(String(c.title||"").trim()) bits.push(c.title);
+  return bits.length ? bits.join(" - ") : "Untitled Chapter";
+}
+
+function buildChapterMd(c){
+  const L = [];
+  L.push("---");
+  L.push("story: " + (c.story ? yqLink(c.story) : ""));
+  L.push("section: " + yq(c.section));
+  L.push("section_order: " + (/^\d+$/.test(String(c.section_order||"").trim()) ? c.section_order : ""));
+  L.push("chapter: " + yq(c.chapter));
+  L.push("title: " + yq(c.title));
+  L.push("status: " + (c.status || "draft"));
+  L.push("word_count: " + wordsIn(c.body));
+  L.push("created: " + (c.created || today()));
+  L.push("updated: " + today());
+  L.push("---");
+  L.push("");
+  L.push("# " + chapterHeading(c));
+  L.push("");
+  L.push(String(c.body||"").trim());
+  L.push("");
+  L.push("## Notes");
+  L.push("");
+  L.push(String(c.notes||"").trim());
+  return L.join("\n").replace(/\n{3,}/g,"\n\n").trimEnd() + "\n";
+}
+
+function patchFrontmatterField(text, key, value){
+  const re = new RegExp("^"+key+":.*$","m");
+  if(re.test(text)) return text.replace(re, key+": "+value);
+  return text.replace(/^(---\r?\n[\s\S]*?)\r?\n---/, (m0, inner)=> inner+"\n"+key+": "+value+"\n---");
+}
+
+/* ============================================================
+   SCAN - read every story bible in Stories/, and every chapter in each
+   story's manuscript_folder (a same-named subfolder, per Stories/_about.md).
+   ============================================================ */
+async function scan(){
+  S.stories = []; S.chapters = []; S.dirHandles = new Map();
+  let dir;
+  try{ dir = await S.root.getDirectoryHandle("Stories"); }
+  catch(e){ renderSidebar(); return; }
+  S.storiesDir = dir;
+
+  for await (const [name, handle] of dir.entries()){
+    if(handle.kind !== "file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+    const text = await (await handle.getFile()).text();
+    const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    const story = { filename:name, folderKey:name.replace(/\.md$/i,""), name:name.replace(/\.md$/i,""),
+                     status:"", manuscript_folder:"", universe:"main timeline",
+                     story_type:"main story" };
+    if(fm) fm[1].split(/\r?\n/).forEach(line=>{
+      const m = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+      if(!m) return;
+      const key = m[1], val = stripQuotes(m[2].trim());
+      if(key === "name" && val) story.name = val;
+      if(key === "status") story.status = val;
+      if(key === "manuscript_folder") story.manuscript_folder = val;
+      if(key === "universe" && val) story.universe = val;
+      if(key === "story_type" && val) story.story_type = val;
+    });
+    S.stories.push(story);
+  }
+  S.stories.sort((a,b)=>a.name.localeCompare(b.name));
+
+  for await (const [name, handle] of dir.entries()){
+    if(handle.kind !== "directory") continue;
+    S.dirHandles.set(name, handle);
+    for await (const [cname, chandle] of handle.entries()){
+      if(chandle.kind !== "file" || !/\.md$/i.test(cname) || cname.startsWith("_")) continue;
+      const text = await (await chandle.getFile()).text();
+      const c = parseChapterFile(text);
+      c.storyFolder = name; c.filename = cname;
+      S.chapters.push(c);
+    }
+  }
+  renderSidebar();
+}
+
+function chaptersFor(folderKey){
+  return S.chapters.filter(c=>c.storyFolder===folderKey).sort((a,b)=>{
+    const soA = /^\d+$/.test(a.section_order) ? +a.section_order : Infinity;
+    const soB = /^\d+$/.test(b.section_order) ? +b.section_order : Infinity;
+    if(soA !== soB) return soA - soB;
+    return String(a.chapter||"").localeCompare(String(b.chapter||""), undefined, {numeric:true});
+  });
+}
+
+async function getStoryDir(folderKey, create){
+  if(S.dirHandles.has(folderKey)) return S.dirHandles.get(folderKey);
+  const h = await S.storiesDir.getDirectoryHandle(folderKey, {create:!!create});
+  S.dirHandles.set(folderKey, h);
+  return h;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+function renderSidebar(){
+  const el = $("sidebar"); el.textContent = "";
+  if(!S.stories.length){
+    const p = document.createElement("div"); p.className = "empty-side";
+    p.innerHTML = 'No stories yet. Write one first in <a href="character-writer.html#type=story&mode=guided">the writer</a>, then come back here to draft it.';
+    el.appendChild(p);
+    return;
+  }
+
+  const h = document.createElement("h2"); h.textContent = "Stories"; el.appendChild(h);
+
+  S.stories.forEach(story=>{
+    const row = document.createElement("div");
+    row.className = "story-item" + (S.activeStory===story.folderKey ? " on" : "");
+    const chapters = chaptersFor(story.folderKey);
+    row.innerHTML = '<span class="nm"></span><span class="ct"></span>';
+    const nm = row.querySelector(".nm");
+    nm.appendChild(document.createTextNode(story.name));
+    if(story.universe === "alternate universe"){
+      const dot = document.createElement("span"); dot.className = "au-dot"; dot.textContent = "AU";
+      nm.appendChild(dot);
+    }
+    row.querySelector(".ct").textContent = chapters.length ? chapters.length+" ch." : "";
+    row.onclick = ()=> selectStory(story.folderKey);
+    el.appendChild(row);
+
+    if(S.activeStory !== story.folderKey) return;
+
+    if(!story.manuscript_folder && !chapters.length){
+      const sd = document.createElement("div"); sd.className = "start-drafting";
+      sd.innerHTML = "No manuscript folder set yet.<br><br>";
+      const btn = document.createElement("button"); btn.className = "btn sm primary";
+      btn.textContent = "Start drafting →";
+      btn.onclick = e=>{ e.stopPropagation(); startDrafting(story); };
+      sd.appendChild(btn);
+      el.appendChild(sd);
+      return;
+    }
+
+    const list = document.createElement("div"); list.className = "chapter-list";
+    let lastSection = Symbol();
+    chapters.forEach(c=>{
+      if(c.section !== lastSection){
+        const lbl = document.createElement("div"); lbl.className = "section-label";
+        lbl.textContent = c.section || "No section";
+        list.appendChild(lbl);
+        lastSection = c.section;
+      }
+      const r = document.createElement("div");
+      r.className = "chapter-row" + (S.activeChapter===c.filename && S.activeStory===story.folderKey ? " on" : "");
+      const label = (c.chapter ? "Ch. "+c.chapter : c.filename.replace(/\.md$/i,"")) + (c.title ? " - "+c.title : "");
+      r.innerHTML = '<span class="nm"></span><span class="wc"></span>';
+      r.querySelector(".nm").textContent = label;
+      r.querySelector(".wc").textContent = wordsIn(c.body) + "w";
+      r.onclick = e=>{ e.stopPropagation(); selectChapter(story.folderKey, c.filename); };
+      list.appendChild(r);
+    });
+    const add = document.createElement("div"); add.className = "new-chapter";
+    add.textContent = "+ New chapter";
+    add.onclick = e=>{ e.stopPropagation(); newChapter(story); };
+    list.appendChild(add);
+    el.appendChild(list);
+  });
+}
+
+function selectStory(folderKey){
+  if(!confirmDiscard()) return;
+  S.activeStory = folderKey;
+  S.activeChapter = null; S.activeHandle = null;
+  renderSidebar();
+  renderEditorEmpty();
+}
+
+/* ============================================================
+   EDITOR
+   ============================================================ */
+function confirmDiscard(){
+  if(!S.dirty) return true;
+  return confirm("You have unsaved changes on this chapter. Discard them?");
+}
+
+function renderEditorEmpty(){
+  const el = $("editor"); el.textContent = "";
+  const p = document.createElement("div"); p.className = "editor-empty";
+  p.textContent = "Pick a chapter on the left, or start a new one, to write here.";
+  el.appendChild(p);
+}
+
+async function selectChapter(folderKey, filename){
+  if(!confirmDiscard()) return;
+  const dir = await getStoryDir(folderKey);
+  const fh = await dir.getFileHandle(filename);
+  const text = await (await fh.getFile()).text();
+  S.activeStory = folderKey; S.activeChapter = filename; S.activeHandle = fh;
+  S.data = parseChapterFile(text);
+  S.dirty = false;
+  renderSidebar();
+  renderEditor();
+}
+
+function renderEditor(){
+  const el = $("editor"); el.textContent = "";
+  const c = S.data;
+
+  const story = S.stories.find(s=>s.folderKey===S.activeStory);
+  if(story && story.universe === "alternate universe"){
+    const banner = document.createElement("div"); banner.className = "universe-banner";
+    banner.textContent = "⌥ ALTERNATE UNIVERSE - " + story.name + " isn't main timeline";
+    el.appendChild(banner);
+  }
+
+  const bar = document.createElement("div"); bar.className = "editor-bar";
+  const isAlt = story && story.universe === "alternate universe";
+  /* only the non-default is badged - "main story" is the assumption */
+  const isSide = story && story.story_type === "side story";
+  bar.innerHTML =
+    '<input type="text" id="fTitle" placeholder="Chapter title">' +
+    '<span class="tag'+(isAlt?" alt":"")+'">'+(isAlt?"alternate universe":"main timeline")+'</span>' +
+    (isSide ? '<span class="tag side">side story</span>' : '') +
+    '<span class="lbl">section</span><input type="text" id="fSection" list="sectionOpts" placeholder="optional">' +
+    '<span id="hSection"></span>' +
+    '<datalist id="sectionOpts"></datalist>' +
+    '<span class="lbl">ch.</span><input type="text" id="fChapter"><span id="hChapter"></span>' +
+    '<select id="fStatus"><option value="draft">draft</option><option value="revised">revised</option><option value="final">final</option></select>' +
+    '<span id="hStatus"></span>' +
+    '<div class="grow"></div>' +
+    '<button class="btn branch sm" id="btnBranch" title="Fork a new alternate-universe story starting from this chapter">⑂ Branch</button>' +
+    '<span id="hBranch"></span>' +
+    '<button class="btn primary sm" id="btnSave">Save</button>';
+  el.appendChild(bar);
+
+  $("hSection").replaceWith(helpBubble(HELP.section, "Section"));
+  $("hChapter").replaceWith(helpBubble(HELP.chapter, "Chapter number"));
+  $("hStatus").replaceWith(helpBubble(HELP.status, "Chapter status"));
+  $("hBranch").replaceWith(helpBubble(HELP.branch, "Branch"));
+
+  const body = document.createElement("div"); body.className = "editor-body";
+  const prose = document.createElement("textarea"); prose.className = "prose"; prose.id = "fBody";
+  prose.placeholder = "Prose goes here.";
+  const notesLbl = document.createElement("div"); notesLbl.className = "notes-label";
+  notesLbl.textContent = "Notes (private - never publishes) ";
+  notesLbl.appendChild(helpBubble(HELP.notes, "Notes"));
+  const notes = document.createElement("textarea"); notes.className = "notes"; notes.id = "fNotes";
+  notes.placeholder = "Pacing, what needs fixing, continuity to check.";
+  body.append(prose, notesLbl, notes);
+  el.appendChild(body);
+
+  const foot = document.createElement("div"); foot.className = "foot-row";
+  foot.innerHTML = '<span id="wcLabel"></span><span id="dirtyLabel"></span>';
+  el.appendChild(foot);
+
+  $("fTitle").value = c.title;
+  $("fSection").value = c.section;
+  $("fChapter").value = c.chapter;
+  $("fStatus").value = c.status || "draft";
+  $("fBody").value = c.body;
+  $("fNotes").value = c.notes;
+
+  const opts = [...new Set(chaptersFor(S.activeStory).map(x=>x.section).filter(Boolean))];
+  $("sectionOpts").innerHTML = opts.map(o=>'<option value="'+o.replace(/"/g,"&quot;")+'">').join("");
+
+  updateWordCount();
+  [$("fTitle"),$("fSection"),$("fChapter"),$("fStatus"),$("fBody"),$("fNotes")]
+    .forEach(inp => inp.addEventListener("input", markDirty));
+  $("fBody").addEventListener("input", updateWordCount);
+  $("btnSave").onclick = saveChapter;
+  $("btnBranch").onclick = branchStory;
+}
+
+function updateWordCount(){
+  const el = $("wcLabel"); if(!el) return;
+  el.textContent = wordsIn($("fBody").value).toLocaleString() + " words";
+}
+
+function markDirty(){
+  S.dirty = true;
+  const el = $("dirtyLabel"); if(el){ el.textContent = "Unsaved changes"; el.className = "unsaved"; }
+}
+
+async function saveChapter(){
+  if(!S.activeHandle) return;
+  const story = S.stories.find(s=>s.folderKey===S.activeStory);
+  const c = {
+    story: story ? story.name : S.activeStory,
+    section: $("fSection").value.trim(),
+    section_order: S.data.section_order,
+    chapter: $("fChapter").value.trim(),
+    title: $("fTitle").value.trim(),
+    status: $("fStatus").value,
+    created: S.data.created,
+    body: $("fBody").value,
+    notes: $("fNotes").value
+  };
+  const text = buildChapterMd(c);
+  try{
+    const w = await S.activeHandle.createWritable();
+    await w.write(text); await w.close();
+    S.data = parseChapterFile(text);
+    S.dirty = false;
+    const el = $("dirtyLabel"); if(el){ el.textContent = "Saved"; el.className = ""; }
+    toast("Saved.");
+    await scan();
+    renderSidebar();
+  }catch(e){
+    toast("Couldn't save: " + (e && e.message), true);
+  }
+}
+
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="s"){
+    e.preventDefault();
+    if(S.activeHandle) saveChapter();
+  }
+});
+window.addEventListener("beforeunload", e=>{
+  if(S.dirty){ e.preventDefault(); e.returnValue=""; }
+});
+
+/* ============================================================
+   NEW CHAPTER / START DRAFTING
+   ============================================================ */
+async function startDrafting(story){
+  const dir = await S.storiesDir.getDirectoryHandle(story.folderKey, {create:true});
+  S.dirHandles.set(story.folderKey, dir);
+  try{
+    const fh = await S.storiesDir.getFileHandle(story.filename);
+    const text = await (await fh.getFile()).text();
+    let patched = patchFrontmatterField(text, "manuscript_folder", "Stories/"+story.folderKey+"/");
+    patched = patchFrontmatterField(patched, "updated", today());
+    const w = await fh.createWritable(); await w.write(patched); await w.close();
+  }catch(e){ toast("Couldn't update the story bible: "+(e&&e.message), true); }
+  toast("Manuscript folder ready - add your first chapter.");
+  await scan();
+  renderSidebar();
+}
+
+async function newChapter(story){
+  const dir = await getStoryDir(story.folderKey, true);
+  const existing = chaptersFor(story.folderKey);
+  const nums = existing.map(c=>parseFloat(c.chapter)).filter(n=>!isNaN(n));
+  const nextNum = nums.length ? Math.max(...nums)+1 : 1;
+  const last = existing[existing.length-1];
+  const filename = "Chapter " + nextNum + " - Untitled.md";
+  const text = buildChapterMd({
+    story: story.name,
+    section: last ? last.section : "",
+    section_order: last ? last.section_order : "",
+    chapter: String(nextNum), title:"", status:"draft",
+    created: today(), body:"", notes:""
+  });
+  const fh = await dir.getFileHandle(filename, {create:true});
+  const w = await fh.createWritable(); await w.write(text); await w.close();
+  await scan();
+  await selectChapter(story.folderKey, filename);
+}
+
+/* ============================================================
+   BRANCH - fork the current story into a new alternate-universe story,
+   starting from the chapter that's open. Copies the bible (same premise/
+   cast/tags, new name + universe/branched_from/branch_point) and every
+   chapter up to and including this one, so the branch starts identical and
+   diverges from here. Deliberately leaves timeline_position: untouched -
+   inheriting it is what makes the branch land next to its parent on
+   timeline.html instead of nowhere.
+   ============================================================ */
+function sanitizeFilename(name){
+  return String(name).replace(/[\\/:*?"<>|]/g,"-");
+}
+
+function uniqueStoryName(baseName){
+  const existing = new Set(S.stories.map(s=>s.filename.toLowerCase()));
+  let name = baseName, n = 2;
+  let filename = sanitizeFilename(name) + ".md";
+  while(existing.has(filename.toLowerCase())){
+    name = baseName + " (" + n + ")"; n++;
+    filename = sanitizeFilename(name) + ".md";
+  }
+  return { name, filename, folderKey: filename.replace(/\.md$/i,"") };
+}
+
+function replaceFirstHeading(body, newName){
+  let replaced = false;
+  return body.split(/\r?\n/).map(line=>{
+    if(!replaced && /^#\s+.+/.test(line.trim())){ replaced = true; return "# " + newName; }
+    return line;
+  }).join("\n");
+}
+
+async function branchStory(){
+  if(!S.activeHandle || !S.activeStory) return;
+  if(S.dirty){ toast("Save your changes first - branching copies what's on disk.", true); return; }
+  const story = S.stories.find(s=>s.folderKey===S.activeStory);
+  if(!story) return;
+
+  const branchLabel = chapterHeading(S.data);
+  const { name:newName, filename:newFilename, folderKey:newFolderKey } = uniqueStoryName(story.name + " (Alternate)");
+
+  let bibleText;
+  try{
+    const bh = await S.storiesDir.getFileHandle(story.filename);
+    bibleText = await (await bh.getFile()).text();
+  }catch(e){ toast("Couldn't read the story bible: "+(e&&e.message), true); return; }
+
+  const m = bibleText.match(/^(---\r?\n[\s\S]*?\r?\n---\r?\n?)([\s\S]*)$/);
+  let fmBlock = m ? m[1] : "---\n---\n";
+  let body = m ? m[2] : bibleText;
+
+  fmBlock = patchFrontmatterField(fmBlock, "name", yq(newName));
+  fmBlock = patchFrontmatterField(fmBlock, "universe", "alternate universe");
+  fmBlock = patchFrontmatterField(fmBlock, "branched_from", yqLink(story.name));
+  fmBlock = patchFrontmatterField(fmBlock, "branch_point", yq(branchLabel));
+  fmBlock = patchFrontmatterField(fmBlock, "manuscript_folder", "Stories/"+newFolderKey+"/");
+  fmBlock = patchFrontmatterField(fmBlock, "created", today());
+  fmBlock = patchFrontmatterField(fmBlock, "updated", today());
+  body = replaceFirstHeading(body, newName);
+
+  try{
+    const newBibleHandle = await S.storiesDir.getFileHandle(newFilename, {create:true});
+    const w = await newBibleHandle.createWritable();
+    await w.write(fmBlock + body);
+    await w.close();
+
+    const newDir = await S.storiesDir.getDirectoryHandle(newFolderKey, {create:true});
+    const srcDir = await getStoryDir(story.folderKey);
+    const chapters = chaptersFor(story.folderKey);
+    const idx = chapters.findIndex(c=>c.filename===S.activeChapter);
+    const toCopy = idx >= 0 ? chapters.slice(0, idx+1) : [];
+    for(const ch of toCopy){
+      const srcHandle = await srcDir.getFileHandle(ch.filename);
+      const text = await (await srcHandle.getFile()).text();
+      const patched = patchFrontmatterField(text, "story", yqLink(newName));
+      const destHandle = await newDir.getFileHandle(ch.filename, {create:true});
+      const w2 = await destHandle.createWritable();
+      await w2.write(patched); await w2.close();
+    }
+
+    toast("Branched into “"+newName+"” at "+branchLabel+".");
+    await scan();
+    await selectStory(newFolderKey);
+  }catch(e){
+    toast("Couldn't create the branch: "+(e&&e.message), true);
+  }
+}
+
+/* ============================================================
+   THEME - identical cycle button to family-tree.html.
+   ============================================================ */
+const SYSTEM_LIGHT = window.matchMedia("(prefers-color-scheme: light)");
+const THEME_ICON = {system:"◐", dark:"☾", light:"☀"};
+const THEME_TITLE = {system:"Theme: follows your system", dark:"Theme: dark", light:"Theme: light"};
+
+function themePref(){
+  try{
+    const v = localStorage.getItem("cdb-theme");
+    return (v==="light"||v==="dark") ? v : "system";
+  }catch(e){ return "system"; }
+}
+function applyTheme(pref){
+  const dark = pref==="system" ? !SYSTEM_LIGHT.matches : pref==="dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $("btnTheme").textContent = THEME_ICON[pref];
+  $("btnTheme").title = THEME_TITLE[pref] + " - click to change";
+}
+$("btnTheme").onclick = ()=>{
+  /* Flip to the opposite of what's actually on screen. The old
+     system -> dark -> light cycle spent a click doing nothing visible: on a
+     machine whose OS is dark, "follow system" and "dark" render identically,
+     so reaching light took two clicks while returning took one. Following the
+     system is still selectable from the dashboard's settings, which lists all
+     three explicitly. */
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{
+    if(next==="system") localStorage.removeItem("cdb-theme");
+    else localStorage.setItem("cdb-theme", next);
+  }catch(e){}
+  applyTheme(next);
+};
+SYSTEM_LIGHT.addEventListener("change", ()=>{ if(themePref()==="system") applyTheme("system"); });
+window.addEventListener("storage", e=>{
+  if(e.key===null || e.key==="cdb-theme") applyTheme(themePref());
+  if(e.key===null || e.key==="cdb-look"){
+    let look = "field";
+    try{ const v = localStorage.getItem("cdb-look"); if(["atlas","board","iris","rose","slate"].indexOf(v) >= 0) look = v; }catch(err){}
+    document.documentElement.dataset.look = look;
+  }
+});
+applyTheme(themePref());
+
+/* ============================================================
+   BOOT - deep link from index.html's story cards: "#story=<filename>".
+   ============================================================ */
+$("btnConnect").onclick = connectFolder;
+
+function fromHash(){
+  const p = new URLSearchParams(location.hash.replace(/^#/,""));
+  const story = p.get("story");
+  return { story: story ? (/\.md$/i.test(story) ? story : story+".md") : null };
+}
+
+if(!FS_OK){ $("fsDot").className="dot warn"; $("fsLabel").textContent="Chrome or Edge needed"; }
+restoreFolder().then(()=>{
+  const wanted = fromHash();
+  if(wanted.story && S.root){
+    const folderKey = wanted.story.replace(/\.md$/i,"");
+    if(S.stories.some(s=>s.folderKey===folderKey)) selectStory(folderKey);
+  }
+});
+
+/* ============================================================
+   TOOL NAV DRAWER
+   ============================================================
+   The three-line button in the header opens a list of every tool. Pure
+   navigation: it stores nothing and reads nothing from the database folder,
+   so it works before a folder is ever connected.
+
+   NAV_TOOLS is repeated in each tool on purpose - these pages are standalone
+   by design, with no build step and no shared runtime. Adding a tool later is
+   one line here, in each file.
+   ============================================================ */
+const NAV_TOOLS = [
+  {g:"⌂", label:"Home",        href:"index.html"},
+  {g:"✎", label:"Writer",      href:"character-writer.html"},
+  {g:"▤", label:"Library",     href:"library.html"},
+  {g:"⁂", label:"Family tree", href:"family-tree.html"},
+  {g:"◎", label:"World map",   href:"world-map.html"},
+  {g:"¶", label:"Manuscript",  href:"manuscript.html"},
+  {g:"▣", label:"Art board",   href:"art-board.html"},
+  {g:"⌕", label:"Search",      href:"search.html"},
+  {g:"◷", label:"Timeline",    href:"timeline.html"}
+];
+const NAV_HERE = "manuscript.html";
+/* This page lives in Tools/; the dashboard is one level up. NAV_TOOLS
+   entries keep the bare filename as their stable id (the saved order is
+   keyed on it), and these two turn an id into a link from here. */
+const NAV_BASE = "";
+const NAV_HOME = "../index.html";
+
+(function(){
+  const btn = document.getElementById("btnNav");
+  if(!btn) return;
+
+  const scrim = document.createElement("div");
+  scrim.id = "navScrim";
+
+  const drawer = document.createElement("nav");
+  drawer.id = "navDrawer";
+  drawer.setAttribute("aria-label", "Tools");
+
+  const h = document.createElement("h2");
+  h.textContent = "Tools";
+  drawer.appendChild(h);
+
+  /* The list order is yours - drag a row to move it. The order rides one
+     shared localStorage key so every tool shows the same list (pure UI
+     convenience, no world data - GROUND-RULES rule 1). A tool missing from
+     the saved order - a future new one - keeps its default place. */
+  const NAV_ORDER_KEY = "cdb-navorder";
+  function navOrder(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY) || "null"); }catch(e){}
+    if(!Array.isArray(saved)) return NAV_TOOLS.slice();
+    const byHref = new Map(NAV_TOOLS.map(t=>[t.href, t]));
+    const out = [];
+    saved.forEach(href=>{ const t = byHref.get(href); if(t){ out.push(t); byHref.delete(href); } });
+    NAV_TOOLS.forEach(t=>{ if(byHref.has(t.href)) out.push(t); });
+    return out;
+  }
+  function saveOrder(list){
+    try{ localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(list.map(t=>t.href))); }catch(e){}
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "navfoot";
+  foot.textContent = "Drag a row to reorder - every tool follows. They all read the same folder: connect it once and they remember it.";
+
+  let dragHref = null;
+  function renderNav(){
+    [...drawer.querySelectorAll("a, span.navhere")].forEach(el=>el.remove());
+    navOrder().forEach(t=>{
+      const here = t.href === NAV_HERE;
+      const el = document.createElement(here ? "span" : "a");
+      if(here){ el.className = "navhere"; el.setAttribute("aria-current","page"); }
+      else { el.href = t.href === "index.html" ? NAV_HOME : NAV_BASE + t.href; }
+      const g = document.createElement("span"); g.className = "g"; g.textContent = t.g;
+      const s = document.createElement("span"); s.textContent = t.label;
+      el.append(g, s);
+      el.draggable = true;
+      el.title = "Drag to reorder";
+      el.addEventListener("dragstart", e=>{
+        dragHref = t.href;
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", t.href); }catch(err){}
+      });
+      el.addEventListener("dragover", e=>{ if(dragHref && dragHref !== t.href) e.preventDefault(); });
+      el.addEventListener("drop", e=>{
+        e.preventDefault();
+        if(!dragHref || dragHref === t.href) return;
+        const cur = navOrder();
+        const from = cur.findIndex(x=>x.href === dragHref);
+        const to = cur.findIndex(x=>x.href === t.href);
+        if(from < 0 || to < 0) return;
+        const moved = cur.splice(from, 1)[0];
+        cur.splice(to, 0, moved);
+        saveOrder(cur);
+        dragHref = null;
+        renderNav();
+      });
+      el.addEventListener("dragend", ()=>{ dragHref = null; });
+      drawer.insertBefore(el, foot);
+    });
+  }
+
+  drawer.appendChild(foot);
+  renderNav();
+  /* a reorder made in another open tab shows up here too */
+  window.addEventListener("storage", e=>{
+    if(e.key === null || e.key === NAV_ORDER_KEY) renderNav();
+  });
+
+  document.body.append(scrim, drawer);
+
+  let open = false;
+  function setNav(next){
+    open = next;
+    scrim.classList.toggle("open", open);
+    drawer.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if(open){
+      const first = drawer.querySelector("a");
+      if(first) first.focus();
+    } else {
+      btn.focus();
+    }
+  }
+
+  btn.setAttribute("aria-expanded","false");
+  btn.onclick = e => { e.stopPropagation(); setNav(!open); };
+  scrim.onclick = () => setNav(false);
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape" && open){ e.stopPropagation(); setNav(false); }
+  }, true);
+})();
+</script>
+
+<!-- cloud storage: makes Supabase look like the folder these tools expect -->
+<script src="/world-codex/config.js"></script>
+<script src="/world-codex/cloud-fs.js"></script>
+</body>
+</html>

@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Character Writer</title>
+<script>
+/* Shared with index.html and family-tree.html: one stored key, applied before
+   first paint. No key at all means "follow the system". */
+(function(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cdb-theme"); }catch(e){}
+  if(pref !== "light" && pref !== "dark") pref = null;
+  var dark = pref ? pref==="dark"
+                  : !window.matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  /* the look (colour family) rides a second shared key; field is the default */
+  var look = null;
+  try{ look = localStorage.getItem("cdb-look"); }catch(e){}
+  if(["atlas","board","iris","rose","slate"].indexOf(look) < 0) look = "field";
+  document.documentElement.dataset.look = look;
+})();
+</script>
+<style>
+  :root{
+    --bg:#14120f;
+    --panel:#1c1a16;
+    --panel-2:#232019;
+    --line:#332e25;
+    --line-soft:#28241d;
+    --ink:#ece4d6;
+    --ink-dim:#a99e8b;
+    --ink-faint:#6f665a;
+    --accent:#c9a227;
+    --accent-soft:#3a3018;
+    --accent-line:#4a3d1d;
+    --accent-hover:#dcb433;
+    --on-accent:#1a1508;
+    --btn-hover:#2a251b;
+    --danger:#c96a4a;
+    --danger-ink:#f0c0ae;
+    --neg:#e8907a;
+    --neg-line:#5a2f22;
+    --pos:#a9d38a;
+    --pos-line:#33502a;
+    --scrim:rgba(0,0,0,.66);
+    --ok:#7fa860;
+    --radius:10px;
+    color-scheme:dark;
+  }
+  /* Light - same palette turned inside out. Set on <html> by the script above. */
+  :root[data-theme="light"]{
+    --bg:#f7f3ea;
+    --panel:#fffdf8;
+    --panel-2:#efe9dc;
+    --line:#dbd1bd;
+    --line-soft:#e9e1d1;
+    --ink:#2a251c;
+    --ink-dim:#5d5548;
+    --ink-faint:#877d6d;
+    --accent:#8a6d10;
+    --accent-soft:#f2e7c2;
+    --accent-line:#d8c68a;
+    --accent-hover:#a1811d;
+    --on-accent:#fffdf6;
+    --btn-hover:#e7dfcf;
+    --danger:#a8431f;
+    --danger-ink:#8c3316;
+    --neg:#9a3c1c;
+    --neg-line:#e0b9a8;
+    --pos:#3f6b28;
+    --pos-line:#bcd4ab;
+    --scrim:rgba(60,50,30,.35);
+    --ok:#4e7233;
+    color-scheme:light;
+  }
+
+  /* ---------- looks ----------------------------------------------------
+     Three colour families shared by every tool, picked in the home page's
+     Settings (cdb-look). Field is the base palette above; Atlas and Board
+     override surfaces and accent. Semantic colours (danger, ok, the
+     loyalty pos/neg pair) stay the same in every look. */
+  :root[data-look="atlas"]{
+    --bg:#111814; --panel:#19231d; --panel-2:#212d26;
+    --line:#35453b; --line-soft:#273229;
+    --ink:#e2dec9; --ink-dim:#a39d87; --ink-faint:#6e796e;
+    --accent:#4fb896; --accent-soft:#163529; --accent-line:#2b5546;
+    --accent-hover:#65cbaa; --on-accent:#062318; --btn-hover:#243128;
+  }
+  :root[data-look="atlas"][data-theme="light"]{
+    --bg:#e7e7d8; --panel:#f4f4e8; --panel-2:#dfdfca;
+    --line:#c2c2a6; --line-soft:#d6d6c0;
+    --ink:#35322a; --ink-dim:#5e5947; --ink-faint:#83816b;
+    --accent:#1d6b58; --accent-soft:#d7eae1; --accent-line:#a6ccbd;
+    --accent-hover:#27816a; --on-accent:#f5fbf8; --btn-hover:#e5e5d2;
+  }
+  :root[data-look="board"]{
+    --bg:#171310; --panel:#201a15; --panel-2:#2a2219;
+    --line:#3a2f24; --line-soft:#2b231c;
+    --ink:#e6dcc6; --ink-dim:#a69c85; --ink-faint:#786b57;
+    --accent:#b58f4a; --accent-soft:#372a15; --accent-line:#584421;
+    --accent-hover:#c8a35e; --on-accent:#251803; --btn-hover:#2f261d;
+  }
+  :root[data-look="board"][data-theme="light"]{
+    --bg:#e8dcc5; --panel:#f2e7d1; --panel-2:#dfd0b3;
+    --line:#c5af85; --line-soft:#d7c7a6;
+    --ink:#2e2822; --ink-dim:#5d5343; --ink-faint:#7c6e54;
+    --accent:#6e5624; --accent-soft:#ecdfbc; --accent-line:#cab383;
+    --accent-hover:#83682a; --on-accent:#fdf9ee; --btn-hover:#e7dabe;
+  }
+  :root[data-look="iris"]{
+    --bg:#151218; --panel:#1d1924; --panel-2:#262030;
+    --line:#383046; --line-soft:#2b2537;
+    --ink:#e8e2f0; --ink-dim:#a79fb6; --ink-faint:#6f6880;
+    --accent:#a78bdb; --accent-soft:#2c2344; --accent-line:#473a66;
+    --accent-hover:#baa2e8; --on-accent:#170f26; --btn-hover:#2a2438;
+  }
+  :root[data-look="iris"][data-theme="light"]{
+    --bg:#f2eef7; --panel:#fcfaff; --panel-2:#e7e0f0;
+    --line:#cfc3e0; --line-soft:#ded4ea;
+    --ink:#2b2438; --ink-dim:#5a5168; --ink-faint:#837a92;
+    --accent:#6b4fa8; --accent-soft:#e6dcf5; --accent-line:#c3aee3;
+    --accent-hover:#7d61bd; --on-accent:#f9f6ff; --btn-hover:#e3dbef;
+    --shadow:rgba(60,50,80,.18);
+  }
+  :root[data-look="rose"]{
+    --bg:#191214; --panel:#221a1d; --panel-2:#2c2226;
+    --line:#443037; --line-soft:#332529;
+    --ink:#eee0e4; --ink-dim:#b39ba3; --ink-faint:#7d6970;
+    --accent:#d4899b; --accent-soft:#3d222b; --accent-line:#5e3644;
+    --accent-hover:#e29fb0; --on-accent:#260f16; --btn-hover:#2f2529;
+  }
+  :root[data-look="rose"][data-theme="light"]{
+    --bg:#f7eef0; --panel:#fffafb; --panel-2:#f0e1e5;
+    --line:#ddc3ca; --line-soft:#ead5da;
+    --ink:#35262b; --ink-dim:#645057; --ink-faint:#8f7a81;
+    --accent:#a04360; --accent-soft:#f4dbe3; --accent-line:#dfadbd;
+    --accent-hover:#b55573; --on-accent:#fff7f9; --btn-hover:#eddde1;
+    --shadow:rgba(80,50,60,.18);
+  }
+  :root[data-look="slate"]{
+    --bg:#10141a; --panel:#171d26; --panel-2:#1f2733;
+    --line:#303c4d; --line-soft:#26303e;
+    --ink:#dde4ee; --ink-dim:#94a1b4; --ink-faint:#627082;
+    --accent:#6da7d8; --accent-soft:#16293c; --accent-line:#2a4a68;
+    --accent-hover:#85b9e4; --on-accent:#06131f; --btn-hover:#232d3a;
+  }
+  :root[data-look="slate"][data-theme="light"]{
+    --bg:#e9edf2; --panel:#f7f9fc; --panel-2:#dde4ec;
+    --line:#bcc8d6; --line-soft:#d2dae4;
+    --ink:#27303b; --ink-dim:#4f5b6a; --ink-faint:#77828f;
+    --accent:#2c6394; --accent-soft:#d9e7f3; --accent-line:#a5c4dd;
+    --accent-hover:#3a76ab; --on-accent:#f6fafd; --btn-hover:#dbe2ea;
+    --shadow:rgba(45,60,80,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif}
+
+  /* ---------- layout ---------- */
+  header{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:var(--panel);position:sticky;top:0;z-index:20;
+  }
+  .brand{font-weight:650;letter-spacing:.2px;margin-right:2px}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .grow{flex:1}
+  main{display:grid;grid-template-columns:1fr 400px;height:calc(100vh - 57px)}
+  @media (max-width:1000px){main{grid-template-columns:1fr}#preview{display:none}}
+  #work{overflow-y:auto;padding:26px 30px 90px}
+  #preview{
+    border-left:1px solid var(--line);background:var(--panel);
+    overflow-y:auto;padding:18px 20px 60px;
+  }
+  #preview h4{margin:0 0 10px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  #previewText{
+    white-space:pre-wrap;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:var(--ink-dim);margin:0;word-break:break-word;
+  }
+
+  /* ---------- controls ---------- */
+  button,select,input,textarea{font:inherit;color:inherit}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer;transition:.13s;
+  }
+  .btn:hover{border-color:var(--accent);background:var(--btn-hover)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+  .btn.primary:hover{background:var(--accent-hover)}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:4px 9px;font-size:13px;border-radius:6px}
+  /* colour field - swatch, hex box, a few suggestions, and a clear button */
+  .colorf{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .colorf input[type=color]{
+    width:38px;height:32px;padding:0;flex:none;cursor:pointer;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+  }
+  .colorf input[type=color]::-webkit-color-swatch-wrapper{padding:3px}
+  .colorf input[type=color]::-webkit-color-swatch{border:0;border-radius:4px}
+  .colorf input.hex{
+    width:104px;flex:none;font-family:ui-monospace,Consolas,monospace;font-size:13px;
+  }
+  .colorf .swatches{display:flex;gap:5px;flex-wrap:wrap}
+  .colorf .sw{
+    width:19px;height:19px;padding:0;border-radius:50%;cursor:pointer;
+    border:1px solid var(--line);
+  }
+  .colorf .sw:hover{transform:scale(1.15)}
+  .colorf .none{font-size:12px;color:var(--ink-faint);background:none;border:0;cursor:pointer;padding:2px 4px}
+  .colorf .none:hover{color:var(--danger-ink);text-decoration:underline}
+  .btn.danger{color:var(--danger-ink);border-color:var(--line)}
+  .btn.danger:hover:not(:disabled){border-color:var(--danger);background:var(--btn-hover)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:transparent;border:0;padding:7px 13px;cursor:pointer;color:var(--ink-dim)}
+  .seg button.on{background:var(--accent-soft);color:var(--ink)}
+  select.plain{background:var(--panel-2);border:1px solid var(--line);padding:7px 10px;border-radius:8px}
+
+  input[type=text],input[type=date],input[type=number],textarea,select.field{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;padding:9px 11px;outline:none;transition:border-color .13s;
+  }
+  input:focus,textarea:focus,select.field:focus{border-color:var(--accent)}
+  textarea{resize:vertical;min-height:90px;line-height:1.6}
+  textarea.prose{font-family:ui-serif,Georgia,serif;font-size:15.5px;min-height:130px}
+  ::placeholder{color:var(--ink-faint)}
+
+  /* ---------- form ---------- */
+  .group{margin-bottom:30px}
+  .group > h3{
+    margin:0 0 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;border-bottom:1px solid var(--line-soft);padding-bottom:7px;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:700px){.grid2{grid-template-columns:1fr}}
+  .f{margin-bottom:15px}
+  .f label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .f .hint{font-size:12.5px;color:var(--ink-faint);margin:-1px 0 6px;line-height:1.45}
+
+  /* ---------- help bubbles ------------------------------------------------
+     A "?" beside a label whose meaning isn't obvious from the label alone.
+     Click for a popover; Esc or a click elsewhere closes it. In this file the
+     text is the field's own `guide` - the same words guided mode shows - so
+     form mode stops being the mode where the explanations disappear. */
+  .helpbub{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:15px;height:15px;margin-left:6px;padding:0;flex:none;
+    border-radius:50%;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--ink-faint);font:700 10.5px/1 inherit;
+    cursor:pointer;vertical-align:middle;
+  }
+  .helpbub:hover,.helpbub:focus{border-color:var(--accent);color:var(--accent);outline:none}
+  .helppop{
+    position:fixed;z-index:200;max-width:290px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;box-shadow:0 14px 34px var(--shadow);
+    font:400 12.5px/1.55 inherit;color:var(--ink-dim);
+  }
+
+  /* chips (list fields) */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:40px}
+  .chips:focus-within{border-color:var(--accent)}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);
+    border:1px solid var(--accent-line);border-radius:999px;padding:2px 6px 2px 10px;font-size:13px}
+  .chip button{background:none;border:0;color:var(--ink-faint);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+  .chip button:hover{color:var(--danger)}
+  .chips input{flex:1;min-width:120px;background:none;border:0;outline:none;padding:4px}
+  /* suggestion dropdown under link fields and the tag box */
+  .suggestpop{
+    position:fixed;z-index:250;min-width:210px;max-width:330px;max-height:242px;
+    overflow-y:auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 14px 34px var(--shadow);padding:4px;
+  }
+  .suggestpop button{
+    display:flex;width:100%;text-align:left;background:none;border:0;border-radius:6px;
+    padding:7px 10px;cursor:pointer;font:inherit;font-size:13px;color:var(--ink);
+    gap:10px;align-items:baseline;
+  }
+  .suggestpop button:hover,.suggestpop button.hot{background:var(--accent-soft)}
+  .suggestpop .kind{margin-left:auto;flex:none;font-size:10px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .suggestpop .uses{flex:none;font-size:11px;color:var(--ink-faint)}
+
+  /* portrait drop zone */
+  .dropzone{
+    margin-top:8px;border:1.5px dashed var(--line);border-radius:10px;
+    padding:11px 13px;display:flex;align-items:center;gap:13px;cursor:pointer;
+    color:var(--ink-faint);font-size:13px;line-height:1.45;transition:.13s;min-height:74px;
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);color:var(--ink-dim)}
+  .dropzone img{width:56px;height:56px;object-fit:cover;border-radius:8px;
+    border:1px solid var(--line);flex:none;background:var(--panel-2)}
+  .dropzone img[hidden]{display:none}
+  .dropzone b{color:var(--ink-dim);font-weight:600}
+
+  /* tables */
+  table.ed{width:100%;border-collapse:collapse;margin-bottom:8px}
+  table.ed th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-faint);font-weight:600;padding:0 6px 6px 0}
+  table.ed td{padding:0 6px 6px 0;vertical-align:top}
+  table.ed td:last-child,table.ed th:last-child{width:34px;padding-right:0}
+  table.ed input{padding:7px 9px}
+  th.mk,td.mk{width:52px;padding-right:6px}
+  select.mk{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:7px 4px;text-align:center;font-size:15px;cursor:pointer;
+  }
+  select.mk:focus{border-color:var(--accent)}
+  select.mk.set{color:var(--accent);border-color:var(--accent-line)}
+  th.sc,td.sc{width:210px}
+  .scale{display:flex;align-items:center;gap:7px}
+  .scale input[type=range]{flex:1;accent-color:var(--accent);min-width:70px;height:20px;cursor:pointer}
+  .scale input[type=range].unset{opacity:.35}
+  .scale input[type=number]{
+    width:66px;padding:7px 4px;text-align:center;
+    background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    -moz-appearance:textfield;
+  }
+  .scale input[type=number].neg{color:var(--neg);border-color:var(--neg-line)}
+  .scale input[type=number].pos{color:var(--pos);border-color:var(--pos-line)}
+  .scale input[type=number]::-webkit-inner-spin-button,
+  .scale input[type=number]::-webkit-outer-spin-button{opacity:.45;filter:invert(.85)}
+  .scale button{background:none;border:0;color:var(--ink-faint);cursor:pointer;font-size:15px;padding:2px 3px}
+  .scale button:hover{color:var(--danger)}
+  .legend{font-size:12px;color:var(--ink-faint);margin:8px 0 0;line-height:1.7}
+  .legend b{color:var(--ink-dim);font-weight:600}
+  .rowdel{background:none;border:0;color:var(--ink-faint);cursor:pointer;font-size:17px;padding:6px}
+  .rowdel:hover{color:var(--danger)}
+
+  /* checklist */
+  .qrow{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+  .qrow input[type=text]{flex:1}
+
+  /* ---------- guided ---------- */
+  #guided{max-width:660px;margin:0 auto}
+  .prog{height:3px;background:var(--line-soft);border-radius:2px;overflow:hidden;margin-bottom:34px}
+  .prog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+  .step-n{font-size:11px;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .step-q{font-size:26px;line-height:1.25;margin:0 0 12px;font-family:ui-serif,Georgia,serif;font-weight:500}
+  .step-guide{color:var(--ink-dim);font-size:14.5px;line-height:1.6;margin:0 0 22px;
+    border-left:2px solid var(--line);padding-left:14px}
+  .nav{display:flex;gap:10px;align-items:center;margin-top:26px;flex-wrap:wrap}
+  .nav .btn{white-space:nowrap}
+  .kbd{font:11px/1 ui-monospace,monospace;background:var(--panel-2);border:1px solid var(--line);
+    border-bottom-width:2px;border-radius:4px;padding:3px 5px;color:var(--ink-faint)}
+
+  /* ---------- misc ---------- */
+  .status{font-size:12.5px;color:var(--ink-faint);display:flex;align-items:center;gap:7px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint);flex:none}
+  .dot.on{background:var(--ok)}
+  .dot.warn{background:var(--accent)}
+  #toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 16px;
+    opacity:0;pointer-events:none;transition:.2s;z-index:60;font-size:14px;max-width:80vw;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{border-color:var(--danger);color:var(--danger-ink)}
+  dialog{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;
+    padding:0;max-width:520px;width:92vw;
+  }
+  dialog::backdrop{background:var(--scrim);backdrop-filter:blur(2px)}
+  .dlg-h{padding:16px 20px;border-bottom:1px solid var(--line);font-weight:600}
+  .dlg-b{padding:18px 20px;max-height:60vh;overflow:auto}
+  .dlg-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .filelist{display:flex;flex-direction:column;gap:2px}
+  .filelist button{
+    text-align:left;background:none;border:0;border-radius:6px;padding:9px 11px;cursor:pointer;color:var(--ink);
+  }
+  .filelist button:hover{background:var(--panel-2)}
+  .note{font-size:13px;color:var(--ink-dim);line-height:1.6}
+  code{font:12.5px ui-monospace,monospace;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+  .unsaved:after{content:"•";color:var(--accent);margin-left:5px}
+  /* the spinner arrows are drawn dark, so they only need inverting on the dark theme */
+  :root[data-theme="light"] .scale input[type=number]::-webkit-inner-spin-button,
+  :root[data-theme="light"] .scale input[type=number]::-webkit-outer-spin-button{filter:none}
+  .btn.icon{padding:5px 9px;font-size:14px;line-height:1.35}
+
+  /* ---------- tool nav drawer ---------------------------------------------
+     The three-line button at the far left of every header opens the same
+     list of every tool, so you can move between them without going via the
+     home page. Identical markup, CSS and behaviour in all of them; the tool
+     you're already in is marked and not a link.
+
+     The list is duplicated per file rather than shared, because these pages
+     are deliberately standalone - no build step, no common runtime. Adding a
+     tool later means one line in each NAV_TOOLS array. */
+  .navbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:32px;flex:none;border-radius:8px;cursor:pointer;
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:0;transition:.13s;
+  }
+  .navbtn span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:1px}
+  .navbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .navbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #navScrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .16s;
+  }
+  #navScrim.open{opacity:1;pointer-events:auto}
+  #navDrawer{
+    position:fixed;top:0;left:0;bottom:0;width:248px;z-index:301;
+    background:var(--panel);border-right:1px solid var(--line);
+    box-shadow:0 0 40px var(--shadow);
+    transform:translateX(-101%);transition:transform .18s ease;
+    display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;
+  }
+  #navDrawer.open{transform:none}
+  #navDrawer h2{
+    margin:2px 8px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  #navDrawer a,#navDrawer span.navhere{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+    color:var(--ink);font-size:14px;text-decoration:none;
+  }
+  #navDrawer a:hover{background:var(--btn-hover);text-decoration:none;color:var(--ink)}
+  #navDrawer a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  #navDrawer span.navhere{background:var(--accent-soft);font-weight:600}
+  #navDrawer .g{width:20px;text-align:center;color:var(--accent);font-size:15px;flex:none}
+  #navDrawer .navfoot{
+    margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line-soft);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5;
+  }
+  @media (prefers-reduced-motion:reduce){
+    #navDrawer,#navScrim{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="navbtn" id="btnNav" title="All tools" aria-label="All tools"><span></span><span></span><span></span></button>
+  <div class="brand">Character Writer<small id="fileLabel">no file open</small></div>
+
+  <select id="typeSel" class="plain" title="Entry type"></select>
+
+  <div class="seg" id="modeSeg">
+    <button data-mode="guided">Guided</button>
+    <button data-mode="form" class="on">Form</button>
+  </div>
+
+  <div class="grow"></div>
+
+  <div class="status"><span class="dot" id="fsDot"></span><span id="fsLabel">folder not connected</span></div>
+  <button class="btn sm icon" id="btnTheme" title="Light / dark" aria-label="Light or dark">☾</button>
+  <button class="btn sm" id="btnConnect">Connect folder</button>
+  <button class="btn sm" id="btnOpen">Open…</button>
+  <button class="btn sm ghost" id="btnNew">New</button>
+  <button class="btn sm danger" id="btnDelete" disabled title="Move this entry to the Trash folder">Delete</button>
+  <button class="btn primary sm" id="btnSave">Save</button>
+</header>
+
+<main>
+  <div id="work">
+    <div id="form"></div>
+    <div id="guided" hidden></div>
+  </div>
+  <aside id="preview">
+    <h4>File preview</h4>
+    <pre id="previewText"></pre>
+  </aside>
+</main>
+
+<div id="toast"></div>
+
+<dialog id="openDlg">
+  <div class="dlg-h">Open an entry</div>
+  <div class="dlg-b"><div class="filelist" id="fileList"></div></div>
+  <div class="dlg-f"><button class="btn" onclick="openDlg.close()">Cancel</button></div>
+</dialog>
+
+<dialog id="helpDlg">
+  <div class="dlg-h">Saving without folder access</div>
+  <div class="dlg-b note" id="helpBody"></div>
+  <div class="dlg-f"><button class="btn" onclick="helpDlg.close()">OK</button></div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ============================================================
+   SCHEMAS - these mirror the markdown templates exactly.
+   Add a field here and it appears in both Form and Guided mode.
+   ============================================================ */
+
+const STATUS_ENTITY = ["seed","sketched","developed","locked"];
+
+/* Markers: a symbol prefixed to a name in any table, for scanning at a glance.
+   Stored in the markdown as a prefix on the name cell - "| ★ [[Sela Quill]] |" */
+const MARKERS = [
+  {s:"",  label:"- none"},
+  {s:"★", label:"★  key - central to this"},
+  {s:"◆", label:"◆  notable"},
+  {s:"▲", label:"▲  rising / watch this"},
+  {s:"●", label:"●  regular"},
+  {s:"✕", label:"✕  dead, gone, or former"},
+  {s:"?", label:"?  undecided"}
+];
+const MARKER_SET = MARKERS.map(m=>m.s).filter(Boolean);
+
+const TYPES = {
+  character: {
+    label: "Character",
+    folder: ["Characters"],
+    hookGuide: "One sentence that makes someone want to know more. If you can't write it yet, leave it blank - that's a real signal about how formed they are.",
+    fields: [
+      {k:"name",   label:"Name", type:"text", required:true, guide:"The filename comes from this. Use the name a person would say out loud."},
+      {k:"aliases",label:"Aliases / nicknames", type:"list", hint:"Press Enter after each", guide:"Titles, nicknames, names they've abandoned. Skip if none."},
+      {k:"status", label:"Status", type:"select", opts:STATUS_ENTITY, def:"seed",
+        guide:"seed = a name and a vibe. sketched = summary written. developed = backstory and relationships worked out. locked = happy with them. Most characters stay at seed and that's fine."},
+      {k:"tags",   label:"Tags", type:"list", hint:"e.g. protagonist, mage, oc-2019", guide:"Loose grouping. Anything you'd want to filter by later."},
+      {k:"color",  label:"Colour", type:"color", hint:"Optional - blank means \"use the section colour\"", guide:"A colour of this entry's own - it tints their page and their row in the library, so a character you look at often is recognisable at a glance. Blank is fine and is the normal case: the entry just wears its section's colour (violet for characters, green for locations, and so on). The library darkens or lightens whatever you pick until the text on it stays readable, so no choice can make a page unreadable."},
+      {k:"pronouns",  label:"Pronouns", type:"text"},
+      {k:"species",   label:"Species", type:"text"},
+      {k:"age",       label:"Age", type:"text", hint:"Free text - \"late 30s\" is fine"},
+      {k:"occupation",label:"Occupation", type:"text", guide:"What they do for money or duty. Often more revealing than personality traits."},
+      {k:"born",  label:"Born", type:"text", hint:"e.g. Year 4 - free text, blank is fine", guide:"Optional. Only characters with a born and/or died get drawn on the timeline's lifespan list."},
+      {k:"died",  label:"Died", type:"text", hint:"Blank means alive"},
+      {k:"origin",       label:"Origin", type:"link", hint:"Links to a location file", guide:"Where they're from. Creates a link to a location file - the location doesn't have to exist yet."},
+      {k:"affiliations", label:"Affiliations", type:"linklist", hint:"Factions, orders, families",
+        guide:"Groups they belong to. These become links, so the character shows up on the faction's side too - worth adding even before the faction has a file of its own."},
+      {k:"stories",      label:"Stories", type:"linklist", hint:"Stories they appear in",
+        guide:"Which stories feature them. The Story Appearances section further down is where role and arc go; this is just the list of links."},
+      {k:"art_folder",label:"Art folder", type:"text", hint:"e.g. Art/marrow-quill/", auto:"artFolder",
+        guide:"Where this character's images live, relative to the database root with forward slashes. Filled in from the name automatically. The art board reads it, and treats any subfolder inside it (reference/, sketch/, outfit/, final/) as a category."},
+      {k:"main_ref",  label:"Main reference image", type:"text", hint:"e.g. Art/marrow-quill/ref-sheet.png",
+        guide:"The one image that best represents them - used as the portrait on the dashboard, the family tree, and the art board. Drop a file on the zone below and this fills itself in."}
+    ],
+    sections: [
+      {k:"Summary", type:"prose", guide:"Two or three paragraphs. Who they are, what they want, what's in the way. Want is the important one - a character without a want is a description."},
+      {k:"Appearance", type:"prose", guide:"Describe what a drawing wouldn't show. How they move, what they smell like, the thing people notice second."},
+      {k:"Personality", type:"prose", guide:"Resist the adjective list. \"Kind\" tells you nothing. \"Apologises to furniture she bumps into\" tells you everything. Write one habit or small scene."},
+      {k:"Backstory", type:"prose", guide:"Only the parts that still affect them. Everything else is trivia you can add later."},
+      {k:"Relationships", type:"table", cols:["Person","Relation","Notes"], linkCol:0, marker:true,
+        guide:"The most useful section in the file. Person names become links, so other characters connect automatically. Use the symbol column to mark who actually matters."},
+      {k:"Abilities / Skills", type:"prose"},
+      {k:"Story Appearances", type:"prose", hint:"One per line - story, role, arc, canon status"},
+      {k:"Open Questions", type:"checklist",
+        guide:"Things you genuinely haven't decided. This is the highest-value section and the one everyone deletes too early. Write the questions down as they occur to you."},
+      {k:"Scratch", type:"prose", guide:"Anything that doesn't fit above. When the same heading keeps showing up here across characters, it should become a real field."}
+    ],
+    guided: [
+      {tier:1, fields:["name","aliases"], q:"Who are we writing about?",
+        guide:"The name becomes the filename. Aliases are optional - titles, nicknames, names they've abandoned."},
+      {tier:1, hook:true},
+      {tier:1, fields:["pronouns","species","age","occupation"], q:"The basics",
+        guide:"Rough answers are fine, and blanks are fine. Occupation is usually the most revealing one on this screen - what someone does for money or duty says more than a list of traits."},
+      {tier:1, section:"Summary"},
+      {tier:1, section:"Personality"},
+      {tier:1, section:"Relationships"},
+      {tier:1, fields:["origin","affiliations","stories"], q:"Where do they fit?",
+        guide:"These become links. Nothing has to exist yet - naming a place here is how you find out you need to write it."},
+      {tier:1, section:"Open Questions"},
+
+      {tier:2, section:"Appearance"},
+      {tier:2, section:"Backstory"},
+      {tier:2, section:"Abilities / Skills"},
+      {tier:2, section:"Story Appearances"},
+      {tier:2, fields:["born","died"], q:"Lifespan",
+        guide:"Both optional, and most characters will leave these blank forever. Fill them in only if you want this character to show up on timeline.html's lifespan list."},
+      {tier:2, fields:["status","tags","color"], q:"Housekeeping",
+        guide:"How formed are they, how do you want to find them later, and - optionally - a colour of their own for the library."},
+      {tier:2, fields:["art_folder","main_ref"], q:"Art",
+        guide:"The folder is filled in from the name. Point the reference at a file inside it once you have one."},
+      {tier:2, section:"Scratch"}
+    ]
+  },
+
+  location: {
+    label: "Location",
+    folder: ["World","Locations"],
+    fields: [
+      {k:"name",  label:"Name", type:"text", required:true},
+      {k:"type",  label:"Type", type:"text", hint:"city, region, building, realm…"},
+      {k:"status",label:"Status", type:"select", opts:STATUS_ENTITY, def:"seed",
+        guide:"How finished this entry is, not how important it is. seed = a name and a vibe · sketched = summary written, basic facts down · developed = the details and open questions worked through · locked = you're happy with it, changes need a reason. Most entries stay at seed and that's fine."},
+      {k:"tags",  label:"Tags", type:"list"},
+      {k:"color", label:"Colour", type:"color", hint:"Optional - blank means \"use the section colour\"", guide:"A colour of this entry's own - it tints their page and their row in the library, so a character you look at often is recognisable at a glance. Blank is fine and is the normal case: the entry just wears its section's colour (violet for characters, green for locations, and so on). The library darkens or lightens whatever you pick until the text on it stays readable, so no choice can make a page unreadable."},
+      {k:"parent_location",   label:"Parent location", type:"link", hint:"The bigger place this sits inside",
+        guide:"Containment, not map grouping: The Basement's parent is Vellhaven because it's literally under it. Use Region for \"which cluster of the map is this in\" - they're different questions and a place can use both."},
+      {k:"region",            label:"Region", type:"text", hint:"Which cluster on the world map - e.g. The Outskirts",
+        guide:"A plain label naming one cluster on the world map. Regions are flat - they don't nest, and they get no files of their own; they're labels, not places. Every location with the same spelling groups together. Leave blank and it sits outside any cluster."},
+      {k:"connections",       label:"Connections", type:"linklist", hint:"Places you can travel to from here - becomes a line on the world map",
+        guide:"Where you can travel to directly from here. Each one draws a line on the world map. If both places list each other the line is solid; if only one does it's dashed with an arrow, which the map flags so you can make it two-way. Naming a place that has no file yet is fine - it shows as a dotted \"ghost\" you can create later."},
+      {k:"factions",          label:"Factions here", type:"linklist",
+        guide:"Groups that operate in this place - not necessarily headquartered here. The faction's own Base field is for that."},
+      {k:"notable_characters",label:"Notable characters", type:"linklist",
+        guide:"People worth mentioning in connection with this place. They don't have to live here - a character who died here or is hunting someone here counts."}
+    ],
+    sections: [
+      {k:"Summary", type:"prose", hint:"Facts: what it is, who runs it, why it matters. Save the sensory writing for Feel.",
+        guide:"The factual layer - what it is, who holds it, why anyone cares. Keep the sights and smells out of this one; the next section is for those."},
+      {k:"Feel", type:"prose", guide:"What it's like to stand there. Sound, smell, light, weather, temperature. Summary tells a reader what the place is; this tells them what it's like. Skip it and every location you write ends up interchangeable."},
+      {k:"History", type:"prose"},
+      {k:"Who Lives Here", type:"prose", hint:"One per line - name, why they're here"},
+      {k:"Story Hooks", type:"prose", guide:"Reasons a story would come here - a rumour, a problem, something buried. A location with no hooks is set dressing."},
+      {k:"Open Questions", type:"checklist"}
+    ],
+    hookGuide:"One line that says what this place is. Blank is fine.",
+    guided: [
+      {tier:1, fields:["name","type"], q:"What is this place?",
+        guide:"Type is free text - city, region, tavern, moon, whatever fits."},
+      {tier:1, section:"Summary"},
+      {tier:1, section:"Feel"},
+      {tier:1, section:"Story Hooks"},
+      {tier:1, fields:["parent_location","region","connections","factions","notable_characters"], q:"What connects to it?",
+        guide:"Region and Connections are what draw the world map - the region is the cluster this place sits in, the connections are the travel lines out of it."},
+      {tier:1, section:"Open Questions"},
+
+      {tier:2, hook:true},
+      {tier:2, section:"History"},
+      {tier:2, section:"Who Lives Here"},
+      {tier:2, fields:["status","tags"], q:"Housekeeping"}
+    ]
+  },
+
+  faction: {
+    label: "Faction",
+    folder: ["World","Factions"],
+    fields: [
+      {k:"name",  label:"Name", type:"text", required:true},
+      {k:"aliases", label:"Also known as", type:"list", hint:"Press Enter after each",
+        guide:"Other names for this same group. A royal house is often both \"the Royal Family\" and its bloodline name; a guild has a street name. Keep one file per group and list the other names here - two files for one organisation is how a world ends up contradicting itself, and it splits the links and backlinks between them. Names listed here resolve to this entry, so [[an alias]] written elsewhere still points at this file."},
+      {k:"type",  label:"Type", type:"text", hint:"order, guild, family, government, cult…"},
+      {k:"status",label:"Status", type:"select", opts:STATUS_ENTITY, def:"seed",
+        guide:"How finished this entry is, not how important it is. seed = a name and a vibe · sketched = summary written, basic facts down · developed = the details and open questions worked through · locked = you're happy with it, changes need a reason. Most entries stay at seed and that's fine."},
+      {k:"tags",  label:"Tags", type:"list"},
+      {k:"color", label:"Colour", type:"color", hint:"Optional - blank means \"use the section colour\"", guide:"A colour of this entry's own - it tints their page and their row in the library, so a character you look at often is recognisable at a glance. Blank is fine and is the normal case: the entry just wears its section's colour (violet for characters, green for locations, and so on). The library darkens or lightens whatever you pick until the text on it stays readable, so no choice can make a page unreadable."},
+      {k:"base",  label:"Base", type:"link", hint:"Their home location, if they have one",
+        guide:"Where they're headquartered. Leave it blank for a group that deliberately has no home base - filling it in and then writing \"they keep no main hub\" elsewhere is how the two end up contradicting each other."},
+      {k:"leader",label:"Leader", type:"link", hint:"Blank is a real answer",
+        guide:"Who runs it. Blank can mean you haven't decided, or that the group genuinely has no single leader - both are legitimate, so note which one you mean in Open Questions."},
+      {k:"members",label:"Members", type:"linklist", hint:"Also fill the Members table below for ranks",
+        guide:"The frontmatter list - just who belongs, used for links and the family tree's other-links view. The Members table further down is where rank and loyalty go."},
+      {k:"allies", label:"Allies", type:"linklist",
+        guide:"Groups or people this faction backs. Kept as its own field so a future alliance-web view can draw it without parsing prose."},
+      {k:"enemies",label:"Enemies", type:"linklist",
+        guide:"The other side of Allies. Note that these aren't checked against the other faction's file - one side can list an enmity the other doesn't know about, which is often the interesting case."}
+    ],
+    sections: [
+      {k:"What They Want", type:"prose",
+        guide:"The single clearest thing about a faction. If you can't answer it, you have a name, not a faction."},
+      {k:"How They Operate", type:"prose"},
+      {k:"History", type:"prose"},
+      {k:"Members", type:"table", cols:["Person","Rank / Role","Loyalty"], linkCol:0, marker:true,
+        colTypes:["link","text","scale"],
+        scale:{min:-100, max:100, step:5},
+        guide:"Loyalty runs −100 to +100. −100 = hates them and is working against them · 0 = neutral, in it for what they get out of it · +100 = would die for it. Leave it blank if you haven't decided - blank is a real answer."},
+      {k:"Open Questions", type:"checklist"}
+    ],
+    hookGuide:"One line. What are they, in the world's own words?",
+    guided: [
+      {tier:1, fields:["name","aliases","type"], q:"What is this group?",
+        guide:"Type is free text - order, guild, family, government, cult, crew."},
+      {tier:1, section:"What They Want"},
+      {tier:1, fields:["base","leader"], q:"Where are they, and who runs them?"},
+      {tier:1, section:"Members"},
+      {tier:1, section:"Open Questions"},
+
+      {tier:2, hook:true},
+      {tier:2, section:"How They Operate"},
+      {tier:2, section:"History"},
+      {tier:2, fields:["allies","enemies"], q:"Who else is in play?"},
+      {tier:2, fields:["status","tags"], q:"Housekeeping"}
+    ]
+  },
+
+  story: {
+    label: "Story",
+    folder: ["Stories"],
+    fields: [
+      {k:"name",  label:"Title", type:"text", required:true},
+      {k:"status",label:"Status", type:"select", opts:["idea","outlined","drafting","done","abandoned"], def:"idea",
+        guide:"How far along the story is. idea = a premise · outlined = you know the beats · drafting = actually writing chapters · done · abandoned. This is about the story's progress; each chapter has its own separate draft/revised/final status in the manuscript tool."},
+      {k:"canon", label:"Canon", type:"select", opts:["true","false"], def:"true", hint:"Did this actually happen?",
+        guide:"Whether this counts as having really happened. Different question from Universe: Canon asks whether it happened, Universe asks which world it happened in. An alternate-universe story can still be canon to itself - set Canon false for things like non-canon one-shots, jokes, or discarded drafts."},
+      {k:"universe", label:"Universe", type:"select", opts:["main timeline","alternate universe"], def:"main timeline",
+        hint:"Which world this happens in, not whether it happened", guide:"Different question from Canon: an "+
+        "alternate universe can still be canon to itself, it just isn't the timeline everything else assumes. "+
+        "Shown as a coloured badge on the dashboard and in the manuscript writer so it's hard to lose track of "+
+        "while drafting."},
+      {k:"story_type", label:"Story type", type:"select", opts:["main story","side story"], def:"main story",
+        hint:"Is this a throughline, or off to the side?", guide:"Whether this is one of the main throughlines of your world or a story off to the side - a spin-off, a companion arc, a one-shot. Different question from Canon and Universe: a side story is usually fully canon and in the main timeline, it just isn't the spine. Shown as a badge on the dashboard and in the manuscript writer, the same way Universe is, so it's hard to lose track of which you're drafting."},
+      {k:"tags",  label:"Tags", type:"list"},
+      {k:"color", label:"Colour", type:"color", hint:"Optional - blank means \"use the section colour\"", guide:"A colour of this entry's own - it tints their page and their row in the library, so a character you look at often is recognisable at a glance. Blank is fine and is the normal case: the entry just wears its section's colour (violet for characters, green for locations, and so on). The library darkens or lightens whatever you pick until the text on it stays readable, so no choice can make a page unreadable."},
+      {k:"timeline_position", label:"Timeline position", type:"text", hint:"e.g. Year 412, spring - free text is fine",
+        guide:"Roughly when this story happens. Free text on purpose - this world hasn't settled on a calendar. Setting it puts the story on timeline.html under \"Story placements\"; leaving it blank just keeps it off there. The timeline sorts by the first number it finds in the text, so \"Year 412, spring\" sorts as 412."},
+      {k:"characters",label:"Characters", type:"linklist",
+        guide:"Everyone who appears. These become links, so the story shows up from each character's side too. The Cast table further down is where roles and arcs go - this is just the who."},
+      {k:"locations", label:"Locations", type:"linklist",
+        guide:"Places the story visits. Name actual location files, not regions - regions are map labels and have no files of their own."},
+      {k:"manuscript_folder", label:"Manuscript folder", type:"text", hint:"e.g. Stories/story-name/",
+        guide:"Where actual chapters live once you're drafting - one file per chapter, see Templates/chapter-template.md. Blank until then; this file stays the story bible."},
+      {k:"branched_from", label:"Branched from", type:"link", hint:"Which story this forks from, if any",
+        guide:"Normally set automatically by manuscript.html's Branch button - leave blank unless you're hand-editing a branch relationship."},
+      {k:"branch_point", label:"Branch point", type:"text", hint:"e.g. \"Chapter 2 - The Vellhaven Attempt\"",
+        guide:"Where it diverges from Branched From. Also normally set automatically."}
+    ],
+    sections: [
+      {k:"Premise", type:"prose", guide:"One paragraph. If it takes three, the story isn't clear to you yet - which is fine, but note it."},
+      {k:"Cast", type:"table", cols:["Character","Role in this story","Arc"], linkCol:0, marker:true},
+      {k:"Outline", type:"prose"},
+      {k:"Notes", type:"prose"},
+      {k:"Open Questions", type:"checklist"}
+    ],
+    hookGuide:"The logline. One sentence someone could repeat to a friend.",
+    guided: [
+      {tier:1, fields:["name"], q:"What's it called?",
+        guide:"A working title is fine. You can rename the file later."},
+      {tier:1, section:"Premise"},
+      {tier:1, section:"Cast"},
+      {tier:1, fields:["characters","locations"], q:"Who and where?",
+        guide:"These become links, so the story shows up on each character's page later."},
+      {tier:1, section:"Open Questions"},
+
+      {tier:2, hook:true},
+      {tier:2, section:"Outline"},
+      {tier:2, section:"Notes"},
+      {tier:2, fields:["status","canon","universe","timeline_position"], q:"Where does it sit?"},
+      {tier:2, fields:["manuscript_folder"], q:"Drafting",
+        guide:"Only fill this in once you're actually writing prose, not just planning. Create a same-named folder next to this file and point this at it - see Templates/chapter-template.md."},
+      {tier:2, fields:["branched_from","branch_point"], q:"Branching",
+        guide:"Only fill these in if this story forks from another - manuscript.html's ⑂ Branch button sets them for you automatically when you use it, so you'll rarely need to touch this by hand."},
+      {tier:2, fields:["tags"], q:"Tags"}
+    ]
+  },
+
+  event: {
+    label: "Event",
+    folder: ["Events"],
+    fields: [
+      {k:"name",  label:"Name", type:"text", required:true},
+      {k:"status",label:"Status", type:"select", opts:STATUS_ENTITY, def:"seed",
+        guide:"How finished this entry is, not how important it is. seed = a name and a vibe · sketched = summary written, basic facts down · developed = the details and open questions worked through · locked = you're happy with it, changes need a reason. Most entries stay at seed and that's fine."},
+      {k:"tags",  label:"Tags", type:"list"},
+      {k:"color", label:"Colour", type:"color", hint:"Optional - blank means \"use the section colour\"", guide:"A colour of this entry's own - it tints their page and their row in the library, so a character you look at often is recognisable at a glance. Blank is fine and is the normal case: the entry just wears its section's colour (violet for characters, green for locations, and so on). The library darkens or lightens whatever you pick until the text on it stays readable, so no choice can make a page unreadable."},
+      {k:"date",  label:"Date", type:"text", hint:"e.g. Year 12, Spring", guide:"Free text - this world's calendar isn't decided yet (see World/Calendar.md), so write it however makes sense: a year, a season, \"three winters before the coronation\"."},
+      {k:"era",   label:"Era", type:"text", hint:"e.g. The Long Peace", guide:"Which band this falls into on the timeline - the same job region: does for a location on the world map. Give it an Order in World/Calendar.md to control which era comes first."},
+      {k:"involves", label:"Involves", type:"linklist", hint:"Characters, locations, factions",
+        guide:"Anyone or anywhere this happened to, or because of. Mixed on purpose - characters, locations and factions all go in the one list, and the timeline turns each into a clickable chip."}
+    ],
+    sections: [
+      {k:"What Happened", type:"prose", guide:"A paragraph of what happened. Facts first; leave the interpretation for Open Questions if it's not settled yet."},
+      {k:"Open Questions", type:"checklist"}
+    ],
+    hookGuide:"One line - what happened, in one sentence.",
+    guided: [
+      {tier:1, fields:["name"], q:"What's this event called?",
+        guide:"A working title is fine. You can rename the file later."},
+      {tier:1, hook:true},
+      {tier:1, fields:["date","era"], q:"When did it happen?"},
+      {tier:1, section:"What Happened"},
+      {tier:1, fields:["involves"], q:"Who and what does it touch?",
+        guide:"Characters, locations, factions - anyone this happened to or because of. Becomes links, so it'll show up on their pages later."},
+      {tier:1, section:"Open Questions"},
+
+      {tier:2, fields:["status","tags"], q:"Housekeeping"}
+    ]
+  }
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+const S = {
+  type: "character",
+  data: {},        // frontmatter values
+  hook: "",
+  sections: {},    // key -> string | rows[][] | items[]
+  mode: "form",
+  step: 0,
+  deep: false,
+  rootHandle: null,
+  savedHandle: null,   // remembered across visits; may need permission renewing
+  fileHandle: null,
+  fileName: null,
+  dirty: false
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const FS_OK = typeof window.showDirectoryPicker === "function";
+
+function toast(msg, isErr){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>{ t.className=""; }, isErr ? 5200 : 2400);
+}
+
+function slug(s){
+  return String(s||"").toLowerCase().trim()
+    .replace(/['']/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function today(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function markDirty(){
+  S.dirty = true;
+  $("fileLabel").classList.add("unsaved");
+  renderPreview();
+}
+
+/* ============================================================
+   BLANK / RESET
+   ============================================================ */
+
+function blank(type){
+  const T = TYPES[type];
+  S.type = type;
+  S.data = {};
+  T.fields.forEach(f=>{
+    if(f.type==="list"||f.type==="linklist") S.data[f.k] = [];
+    else S.data[f.k] = f.def || "";
+  });
+  S.data.created = today();
+  S.data.updated = today();
+  S.hook = "";
+  S.sections = {};
+  T.sections.forEach(s=>{
+    S.sections[s.k] = s.type==="table" ? [newRow(s)] : s.type==="checklist" ? [""] : "";
+  });
+  S.fileHandle = null;
+  S.fileName = null; S.fileFolder = null;
+  S.step = 0;
+  S.deep = false;
+  S.dirty = false;
+  $("fileLabel").classList.remove("unsaved");
+  $("fileLabel").textContent = "new " + T.label.toLowerCase();
+}
+
+/* ============================================================
+   SERIALISE  →  markdown
+   ============================================================ */
+
+function yq(v){
+  // quote a scalar if it needs it
+  const s = String(v);
+  if(s === "") return "";
+  if(/^(true|false|null|~)$/i.test(s)) return s;
+  if(/^-?\d+(\.\d+)?$/.test(s)) return s;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if(/[:#\[\]{}",&*?|<>=!%@`]/.test(s) || /^\s|\s$/.test(s)) return JSON.stringify(s);
+  return s;
+}
+function yqStr(v){ return JSON.stringify(String(v)); }
+
+function newRow(sec){
+  return new Array(sec.cols.length + (sec.marker?1:0)).fill("");
+}
+function markerOf(sec, row){ return sec.marker ? String(row[sec.cols.length]||"") : ""; }
+
+function tableToMd(sec, rows){
+  const cols = sec.cols;
+  const used = (rows||[]).filter(r => cols.some((_,i)=> String(r[i]||"").trim()!==""));
+  const body = (used.length?used:[newRow(sec)]).map(r=>{
+    const cells = cols.map((_,i)=>{
+      let v = String(r[i]||"").trim();
+      if(i===sec.linkCol){
+        if(v && !/^\[\[/.test(v)) v = "[["+v+"]]";
+        const mk = markerOf(sec, r);
+        if(mk) v = (v ? mk+" "+v : mk);
+      }
+      return v.replace(/\|/g,"\\|");
+    });
+    return "| " + cells.join(" | ") + " |";
+  }).join("\n");
+  return "| " + cols.join(" | ") + " |\n|" + cols.map(()=>"---").join("|") + "|\n" + body;
+}
+
+function buildMd(){
+  const T = TYPES[S.type];
+  const L = [];
+
+  L.push("---");
+  T.fields.forEach(f=>{
+    const v = S.data[f.k];
+    if(f.type==="list"){
+      L.push(f.k+": [" + (v||[]).map(yqStr).join(", ") + "]");
+    } else if(f.type==="linklist"){
+      L.push(f.k+": [" + (v||[]).map(x=>yqStr(/^\[\[/.test(x)?x:"[["+x+"]]")).join(", ") + "]");
+    } else if(f.type==="link"){
+      const s = String(v||"").trim();
+      L.push(s ? f.k+": " + yqStr(/^\[\[/.test(s)?s:"[["+s+"]]") : f.k+":");
+    } else {
+      const s = yq(v||"");
+      L.push(s ? f.k+": "+s : f.k+":");
+    }
+  });
+  L.push("created: " + (S.data.created||today()));
+  L.push("updated: " + (S.data.updated||today()));
+  L.push("---");
+  L.push("");
+  L.push("# " + (S.data.name||"Untitled"));
+  L.push("");
+  if(String(S.hook||"").trim()){
+    String(S.hook).trim().split("\n").forEach(l=>L.push("> "+l));
+    L.push("");
+  }
+
+  T.sections.forEach(sec=>{
+    L.push("## " + sec.k);
+    L.push("");
+    const v = S.sections[sec.k];
+    if(sec.type==="table"){
+      L.push(tableToMd(sec, v||[]));
+    } else if(sec.type==="checklist"){
+      const items = (v||[]).map(x=>String(x||"").trim()).filter(Boolean);
+      L.push(items.length ? items.map(x=>"- [ ] "+x).join("\n") : "- [ ] ");
+    } else {
+      L.push(String(v||"").trim());
+    }
+    L.push("");
+  });
+
+  if(S.type==="character" && String(S.data.main_ref||"").trim()){
+    L.push("## Art");
+    L.push("");
+    L.push("![]("+String(S.data.main_ref).trim()+")");
+    L.push("");
+  }
+
+  return L.join("\n").replace(/\n{3,}/g,"\n\n").trimEnd() + "\n";
+}
+
+/* ============================================================
+   PARSE  ←  markdown
+   ============================================================ */
+
+function stripLink(s){
+  const m = String(s||"").trim().match(/^\[\[(.+?)\]\]$/);
+  return m ? m[1] : String(s||"").trim();
+}
+
+function parseYamlList(raw){
+  const inner = raw.trim().replace(/^\[/,"").replace(/\]$/,"");
+  if(!inner.trim()) return [];
+  const out=[]; let cur=""; let q=null;
+  for(let i=0;i<inner.length;i++){
+    const c = inner[i];
+    if(q){
+      if(c==="\\" && i+1<inner.length){ cur+=inner[++i]; continue; }
+      if(c===q){ q=null; continue; }
+      cur+=c;
+    } else if(c==='"'||c==="'"){ q=c; }
+    else if(c===","){ out.push(cur.trim()); cur=""; }
+    else cur+=c;
+  }
+  if(cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
+}
+
+function parseFile(text){
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  const fm = {};
+  let body = text;
+  if(m){
+    body = text.slice(m[0].length);
+    m[1].split(/\r?\n/).forEach(line=>{
+      if(!line.trim() || /^\s*#/.test(line)) return;
+      const i = line.indexOf(":");
+      if(i < 0) return;
+      const k = line.slice(0,i).trim();
+      let v = line.slice(i+1).trim();
+      if(v.startsWith("[")){ fm[k] = parseYamlList(v); return; }
+      if(v.startsWith('"') || v.startsWith("'")){
+        const qc = v[0];
+        let end = -1;
+        for(let j=1;j<v.length;j++){ if(v[j]==="\\"){j++;continue;} if(v[j]===qc){end=j;break;} }
+        fm[k] = end>0 ? v.slice(1,end).replace(/\\"/g,'"').replace(/\\\\/g,"\\") : v.slice(1);
+        return;
+      }
+      v = v.replace(/\s+#.*$/,"").trim();
+      fm[k] = v;
+    });
+  }
+
+  // split body into sections
+  const lines = body.split(/\r?\n/);
+  const sec = {}; let cur = "__pre__"; let buf = [];
+  for(const line of lines){
+    const h = line.match(/^##\s+(.+?)\s*$/);
+    if(h){ sec[cur] = buf.join("\n"); cur = h[1]; buf = []; }
+    else buf.push(line);
+  }
+  sec[cur] = buf.join("\n");
+
+  // hook = blockquote in preamble
+  const pre = sec.__pre__ || "";
+  const hookLines = pre.split("\n").filter(l=>/^>\s?/.test(l)).map(l=>l.replace(/^>\s?/,""));
+  return { fm, sec, hook: hookLines.join("\n").trim() };
+}
+
+function mdTableToRows(md, sec){
+  const ncols = sec.cols.length;
+  const rows = [];
+  md.split("\n").forEach(line=>{
+    const t = line.trim();
+    if(!t.startsWith("|")) return;
+    if(/^\|[\s:\-|]+\|$/.test(t)) return;                 // separator
+    const cells = t.replace(/^\|/,"").replace(/\|$/,"").split(/(?<!\\)\|/).map(c=>c.replace(/\\\|/g,"|").trim());
+    rows.push(cells);
+  });
+  if(rows.length) rows.shift();                            // header row
+  const out = rows.map(r=>{
+    const a = newRow(sec);
+    let mk = "";
+    for(let i=0;i<ncols;i++){
+      let v = String(r[i]||"").trim();
+      if(i === sec.linkCol && sec.marker){
+        const m = v.match(/^(\S)\s*(.*)$/);
+        if(m && MARKER_SET.indexOf(m[1]) >= 0){ mk = m[1]; v = m[2].trim(); }
+      }
+      a[i] = stripLink(v);
+    }
+    if(sec.marker) a[ncols] = mk;
+    return a;
+  }).filter(r=>sec.cols.some((_,i)=>r[i]!==""));
+  return out.length ? out : [newRow(sec)];
+}
+
+function loadFromText(text, type){
+  const P = parseFile(text);
+  blank(type);
+  const T = TYPES[type];
+  T.fields.forEach(f=>{
+    const v = P.fm[f.k];
+    if(v === undefined) return;
+    if(f.type==="list") S.data[f.k] = Array.isArray(v)?v:parseYamlList(String(v));
+    else if(f.type==="linklist") S.data[f.k] = (Array.isArray(v)?v:parseYamlList(String(v))).map(stripLink);
+    else if(f.type==="link") S.data[f.k] = stripLink(v);
+    else S.data[f.k] = String(v);
+  });
+  if(P.fm.created) S.data.created = String(P.fm.created);
+  S.data.updated = today();
+  S.hook = P.hook;
+  T.sections.forEach(s=>{
+    const raw = (P.sec[s.k]||"").trim();
+    if(s.type==="table") S.sections[s.k] = mdTableToRows(raw, s);
+    else if(s.type==="checklist"){
+      const items = raw.split("\n").map(l=>l.replace(/^-\s*\[[ xX]\]\s*/,"").trim()).filter(Boolean);
+      S.sections[s.k] = items.length?items:[""];
+    }
+    else S.sections[s.k] = raw;
+  });
+}
+
+/* ============================================================
+   FILE SYSTEM
+   ============================================================ */
+
+// Names of the database's own subfolders - picking one of these as the root
+// is the classic mistake and silently spawns nested Characters/Characters/.
+const SUBFOLDER_NAMES = ["characters","world","locations","factions","stories","art","templates","claude chat history","tools","docs","events","trash","site"];
+
+async function looksLikeRoot(h){
+  try{ await h.getDirectoryHandle("Templates"); return true; }catch(e){}
+  try{ await h.getDirectoryHandle("Characters"); return true; }catch(e){}
+  try{ await h.getFileHandle("README.md"); return true; }catch(e){}   // pre-Docs/ layouts
+  return false;
+}
+
+/* ---- remembering the folder --------------------------------------------
+   A folder handle can't be turned into a string, so localStorage is no use -
+   it goes in IndexedDB instead. What's stored is a *pointer to* the folder,
+   never anything from inside it, so GROUND-RULES rule 1 still holds: delete
+   this and nothing about the world is lost, you just pick the folder again.
+
+   All three tools share the one entry, so connecting here means the home page
+   and the family tree are connected too. Browsers don't hand permission back
+   automatically after a restart, so when a remembered folder needs re-granting
+   the button becomes a one-click "Reconnect" instead of the full picker. */
+const FOLDER_DB = "cdb-folder", FOLDER_STORE = "handles", FOLDER_KEY = "root";
+
+function folderTx(mode){
+  return new Promise((res,rej)=>{
+    let rq;
+    try{ rq = indexedDB.open(FOLDER_DB, 1); }catch(e){ rej(e); return; }
+    rq.onupgradeneeded = ()=>rq.result.createObjectStore(FOLDER_STORE);
+    rq.onerror = ()=>rej(rq.error);
+    rq.onsuccess = ()=>{
+      const db = rq.result, tx = db.transaction(FOLDER_STORE, mode);
+      tx.oncomplete = ()=>db.close();
+      res(tx.objectStore(FOLDER_STORE));
+    };
+  });
+}
+
+async function rememberFolder(handle){
+  try{ (await folderTx("readwrite")).put(handle, FOLDER_KEY); }
+  catch(e){}                      // private windows and older browsers say no
+}
+
+async function recallFolder(){
+  try{
+    const store = await folderTx("readonly");
+    return await new Promise(res=>{
+      const q = store.get(FOLDER_KEY);
+      q.onsuccess = ()=>res(q.result || null);
+      q.onerror   = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+
+function useFolder(h, quiet){
+  S.rootHandle = h;
+  S.savedHandle = h;
+  rememberFolder(h);
+  $("fsDot").className = "dot on";
+  $("fsLabel").textContent = h.name;
+  $("btnConnect").textContent = "Change folder";
+  if(!quiet) toast("Connected to " + h.name);
+  tryPendingOpen();
+  scanSuggestions();          // feed the link/tag dropdowns; fire-and-forget
+  syncDeleteBtn();
+}
+
+/* On load: if the folder was remembered and the browser still trusts us with
+   it, open it without asking. Otherwise leave a one-click Reconnect. */
+async function restoreFolder(){
+  if(!FS_OK) return;
+  const h = await recallFolder();
+  if(!h) return;
+  S.savedHandle = h;
+  let perm = "prompt";
+  try{ perm = await h.queryPermission({mode:"readwrite"}); }catch(e){}
+  if(perm === "granted"){ useFolder(h, true); return; }
+  /* Read permission is enough to open and edit. The dashboard and the other
+     browsing tools only ask for "read", so a handle arriving from them often
+     has read granted while readwrite is still "prompt". Without this
+     fallback, a card click on index.html ("#open=...") parked forever and
+     the writer showed a blank new entry instead. Write permission is
+     requested at Save time, where the click counts as a user gesture. */
+  let readPerm = "prompt";
+  try{ readPerm = await h.queryPermission({mode:"read"}); }catch(e){}
+  if(readPerm === "granted"){ useFolder(h, true); return; }
+  $("fsDot").className = "dot warn";
+  $("fsLabel").textContent = '"'+h.name+'" - needs a click';
+  $("btnConnect").textContent = "Reconnect";
+}
+
+async function connectFolder(){
+  if(!FS_OK){ showHelp(); return; }
+
+  // a remembered folder only needs its permission renewed - skip the picker
+  if(S.savedHandle && S.savedHandle !== S.rootHandle){
+    try{
+      if(await S.savedHandle.requestPermission({mode:"readwrite"}) === "granted"){
+        useFolder(S.savedHandle); return;
+      }
+    }catch(e){}
+  }
+
+  try{
+    const h = await window.showDirectoryPicker({ mode:"readwrite" });
+    if(!(await looksLikeRoot(h))){
+      const why = SUBFOLDER_NAMES.includes(h.name.toLowerCase())
+        ? '"' + h.name + '" looks like a subfolder inside the database, not the database itself.'
+        : '"' + h.name + '" doesn’t look like the database root (no README.md or Templates folder in it).';
+      const repick = confirm(
+        why + "\n\nSaving here would create new nested subfolders in the wrong place. " +
+        "You probably want the “Character Database” folder itself.\n\n" +
+        "OK = pick a different folder · Cancel = use this one anyway");
+      if(repick){ connectFolder(); return; }
+    }
+    useFolder(h);
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    showHelp(e && e.message);
+  }
+}
+
+async function subdir(create){
+  const parts = TYPES[S.type].folder;
+  let h = S.rootHandle;
+  for(const p of parts) h = await h.getDirectoryHandle(p, {create:!!create});
+  return h;
+}
+
+/* ---- renaming --------------------------------------------------------------
+   Saving under a new name used to leave the old file sitting there, so one
+   entry became two. Now the old file is removed once the new one is safely
+   written, and - because a rename silently breaks every `[[old name]]`
+   elsewhere - the writer offers to repoint those links too.
+
+   Only ever treated as a rename when the entry stays in the same folder:
+   switching the type selector and saving is a different operation, and must
+   not delete the original. */
+
+const LINK_DIRS = [["Characters"],["World","Locations"],["World","Factions"],["Stories"],["Events"]];
+
+/* every .md in the database that a wikilink could live in, chapters included */
+async function walkLinkFiles(){
+  const out = [];
+  for(const parts of LINK_DIRS){
+    let dir = S.rootHandle, ok = true;
+    try{ for(const p of parts) dir = await dir.getDirectoryHandle(p); }catch(e){ ok = false; }
+    if(!ok) continue;
+    try{
+      for await (const [n,h] of dir.entries()){
+        if(h.kind === "file" && /\.md$/i.test(n) && !n.startsWith("_")) out.push({h, name:n, dir:parts.join("/")});
+        else if(h.kind === "directory"){                       // story manuscript folders
+          try{
+            for await (const [n2,h2] of h.entries()){
+              if(h2.kind === "file" && /\.md$/i.test(n2) && !n2.startsWith("_"))
+                out.push({h:h2, name:n2, dir:parts.join("/") + "/" + n});
+            }
+          }catch(e){}
+        }
+      }
+    }catch(e){}
+  }
+  return out;
+}
+
+function escRe(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+/* [[Old]] and [[Old|shown as]] both repoint; the display half is untouched */
+function repointLinks(text, oldName, newName){
+  const re = new RegExp("\\[\\[\\s*" + escRe(oldName) + "\\s*(\\|[^\\]]*)?\\]\\]", "g");
+  return text.replace(re, (_, alias)=> "[[" + newName + (alias || "") + "]]");
+}
+
+async function repointInboundLinks(oldName, newName, skipFile){
+  const files = await walkLinkFiles();
+  const hits = [];
+  for(const f of files){
+    if(f.name === skipFile) continue;
+    let text;
+    try{ text = await (await f.h.getFile()).text(); }catch(e){ continue; }
+    const next = repointLinks(text, oldName, newName);
+    if(next !== text) hits.push({f, next});
+  }
+  if(!hits.length) return 0;
+
+  const where = hits.slice(0, 6).map(h=>"  - " + h.f.dir + "/" + h.f.name).join("\n");
+  if(!confirm(
+      hits.length + (hits.length === 1 ? " file links" : " files link") + ' to "' + oldName + '":\n\n' +
+      where + (hits.length > 6 ? "\n  - …and " + (hits.length - 6) + " more" : "") +
+      '\n\nRepoint them to "' + newName + '"?\n\n' +
+      "Cancel leaves them pointing at a name that no longer exists.")) return 0;
+
+  let done = 0;
+  for(const {f, next} of hits){
+    try{
+      const w = await f.h.createWritable();
+      await w.write(next);
+      await w.close();
+      done++;
+    }catch(e){}
+  }
+  return done;
+}
+
+async function save(){
+  const name = String(S.data.name||"").trim();
+  if(!name){ toast("Give it a name first.", true); return; }
+  S.data.updated = today();
+  const text = buildMd();
+  const filename = name.replace(/[\\/:*?"<>|]/g,"-") + ".md";
+
+  if(S.rootHandle){
+    /* The folder may have been opened with read-only permission (e.g. the
+       handle came from the dashboard, which only asks for "read"). Saving
+       is a click, so the browser lets us ask for the upgrade right here.
+       If it's refused, fall through to the download path below rather
+       than losing the work. */
+    let wperm = "granted";
+    try{ wperm = await S.rootHandle.queryPermission({mode:"readwrite"}); }catch(e){}
+    if(wperm !== "granted"){
+      try{ wperm = await S.rootHandle.requestPermission({mode:"readwrite"}); }catch(e){ wperm = "denied"; }
+    }
+    if(wperm === "granted"){
+      try{
+        const dir = await subdir(true);
+        const here = TYPES[S.type].folder.join("/");
+        /* a rename: same entry, same folder, different filename */
+        const renaming = !!(S.fileHandle && S.fileName && S.fileName !== filename
+                            && S.fileFolder === here);
+        const oldFile = S.fileName;
+        const oldName = oldFile ? oldFile.replace(/\.md$/i, "") : "";
+
+        if(renaming){
+          /* don't silently write over a different entry that already owns
+             the new name */
+          let taken = true;
+          try{ await dir.getFileHandle(filename); }catch(e){ taken = false; }
+          if(taken && !confirm(
+              filename + " already exists in " + here + ".\n\n" +
+              "Saving will overwrite that file with this entry, and " + oldFile +
+              " will be removed.\n\nGo ahead?")) return;
+        }
+
+        const fh = S.fileHandle && S.fileName === filename
+          ? S.fileHandle
+          : await dir.getFileHandle(filename, {create:true});
+        const w = await fh.createWritable();
+        await w.write(text);
+        await w.close();
+
+        let renameNote = "";
+        if(renaming){
+          /* the new file is written and closed - only now drop the old one */
+          try{
+            await dir.removeEntry(oldFile);
+            renameNote = " - renamed from " + oldFile;
+          }catch(e){
+            renameNote = " - but " + oldFile + " is still there, remove it by hand";
+          }
+        }
+
+        S.fileHandle = fh; S.fileName = filename; S.fileFolder = here;
+        S.dirty = false;
+        $("fileLabel").classList.remove("unsaved");
+        $("fileLabel").textContent = here + "/" + filename;
+        toast("Saved " + filename + renameNote);
+        scanSuggestions();    // the entry just saved should suggest itself
+        syncDeleteBtn();      // a brand-new entry is now deletable
+
+        /* offer to fix every [[old name]] elsewhere, so a rename doesn't
+           quietly orphan the links pointing at it */
+        if(renaming && oldName && oldName !== name){
+          const n = await repointInboundLinks(oldName, name, filename);
+          if(n) toast("Repointed " + n + (n === 1 ? " link" : " links") + " to " + name);
+        }
+        return;
+      }catch(e){
+        toast("Couldn't write to the folder: " + (e && e.message), true);
+        return;
+      }
+    }
+    toast("No write access to the folder - downloading the file instead.", true);
+  }
+  // fallback: download
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/markdown"}));
+  a.download = filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  S.dirty = false;
+  $("fileLabel").classList.remove("unsaved");
+  $("fileLabel").textContent = filename + " (downloaded)";
+  toast("Downloaded " + filename + " - move it into " + TYPES[S.type].folder.join("/"));
+}
+
+/* ---- delete ---------------------------------------------------------------
+   Deleting is the one action here that can't be undone with Ctrl+Z, so it
+   doesn't erase anything: the file is moved to a `Trash/` folder at the
+   database root, keeping its own text byte for byte. Recovering a mistake is
+   dragging the file back in a file manager; emptying the trash for real is
+   deleting that folder yourself. `Trash/` is skipped by the library and by
+   search, so a discarded entry stops showing up everywhere else.
+
+   The button only lights up once a saved file is actually open - there is
+   nothing to delete about an entry you haven't written yet. */
+
+function syncDeleteBtn(){
+  const b = $("btnDelete");
+  if(!b) return;
+  b.disabled = !(S.rootHandle && S.fileHandle && S.fileName);
+  b.title = b.disabled
+    ? "Open a saved entry first - there's nothing to delete yet"
+    : "Move " + S.fileName + " to the Trash folder";
+}
+
+async function deleteEntry(){
+  if(!(S.rootHandle && S.fileHandle && S.fileName)) return;
+  const filename = S.fileName;
+  const from = TYPES[S.type].folder.join("/");
+
+  if(!confirm(
+      "Move this entry to the Trash folder?\n\n" + from + "/" + filename + "\n\n" +
+      "It leaves " + from + " and lands in Trash/ - nothing is erased, and you can drag " +
+      "it back yourself. Links in other files that point at it will show as unwritten.")) return;
+
+  const btn = $("btnDelete");
+  btn.disabled = true; btn.textContent = "Deleting…";
+  try{
+    /* the folder may be connected read-only (a handle from the dashboard) -
+       this click is the user gesture the browser wants for the upgrade */
+    let perm = "granted";
+    try{ perm = await S.rootHandle.queryPermission({mode:"readwrite"}); }catch(e){}
+    if(perm !== "granted"){
+      try{ perm = await S.rootHandle.requestPermission({mode:"readwrite"}); }catch(e){ perm = "denied"; }
+    }
+    if(perm !== "granted") throw new Error("write access not granted");
+
+    const text = await (await S.fileHandle.getFile()).text();
+
+    /* never clobber something already in the trash - suffix instead */
+    const trash = await S.rootHandle.getDirectoryHandle("Trash", {create:true});
+    let target = filename;
+    const stem = filename.replace(/\.md$/i, ""), ext = ".md";
+    for(let n = 2; n < 500; n++){
+      let taken = true;
+      try{ await trash.getFileHandle(target); }catch(e){ taken = false; }
+      if(!taken) break;
+      target = stem + " (" + n + ")" + ext;
+    }
+    const th = await trash.getFileHandle(target, {create:true});
+    const w = await th.createWritable();
+    await w.write(text);
+    await w.close();
+
+    /* only remove the original once the copy is safely written */
+    const dir = await subdir(false);
+    await dir.removeEntry(filename);
+
+    S.fileHandle = null; S.fileName = null; S.fileFolder = null; S.dirty = false;
+    blank(S.type);
+    $("fileLabel").classList.remove("unsaved");
+    $("fileLabel").textContent = "no file open";
+    render();
+    scanSuggestions();
+    toast("Moved " + filename + " to Trash/" + (target === filename ? "" : " as " + target));
+  }catch(e){
+    toast("Couldn't delete: " + (e && e.message), true);
+  }finally{
+    btn.textContent = "Delete";
+    syncDeleteBtn();
+  }
+}
+
+/* ---- deep-linked open ---------------------------------------------------
+   index.html links here as "#open=Arcy Ivory.md&type=character". The folder
+   handle usually arrives a beat later (restoreFolder is async), so the
+   request parks in PENDING_OPEN and fires as soon as a folder connects -
+   including via the one-click Reconnect after a browser restart. */
+let PENDING_OPEN = null;
+
+async function openByName(filename, type){
+  if(!S.rootHandle || !TYPES[type]) return;
+  try{
+    let dir = S.rootHandle;
+    for(const p of TYPES[type].folder) dir = await dir.getDirectoryHandle(p);
+    const fh = await dir.getFileHandle(filename);
+    const text = await (await fh.getFile()).text();
+    if($("typeSel").value !== type) $("typeSel").value = type;
+    loadFromText(text, type);
+    S.fileHandle = fh; S.fileName = filename; S.fileFolder = TYPES[type].folder.join("/");
+    $("fileLabel").textContent = TYPES[type].folder.join("/") + "/" + filename;
+    $("fileLabel").classList.remove("unsaved");
+    render();
+    toast("Opened " + filename);
+  }catch(e){
+    toast("Couldn't open " + filename + " - it may have been renamed.", true);
+  }
+}
+
+function tryPendingOpen(){
+  if(!PENDING_OPEN || !S.rootHandle) return;
+  const p = PENDING_OPEN; PENDING_OPEN = null;
+  openByName(p.file, p.type);
+}
+
+async function openPicker(){
+  if(!S.rootHandle){
+    // fallback: plain file input
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".md,text/markdown";
+    inp.onchange = async () => {
+      const f = inp.files[0]; if(!f) return;
+      loadFromText(await f.text(), S.type);
+      S.fileName = f.name; S.fileFolder = null;
+      $("fileLabel").textContent = f.name + " (read-only copy)";
+      $("fileLabel").classList.remove("unsaved");
+      render();
+      toast("Loaded " + f.name + " - saving will download a new copy");
+    };
+    inp.click();
+    return;
+  }
+  let dir;
+  try{ dir = await subdir(false); }
+  catch(e){ toast("No " + TYPES[S.type].folder.join("/") + " folder in there yet.", true); return; }
+
+  const names = [];
+  for await (const [n, h] of dir.entries()){
+    if(h.kind === "file" && n.toLowerCase().endsWith(".md") && !n.startsWith("_about")) names.push(n);
+  }
+  names.sort((a,b)=>a.localeCompare(b));
+
+  const list = $("fileList");
+  list.innerHTML = "";
+  if(!names.length){
+    list.innerHTML = '<div class="note">Nothing here yet. Write one and save it.</div>';
+  }
+  names.forEach(n=>{
+    const b = document.createElement("button");
+    b.textContent = n.replace(/\.md$/,"");
+    b.onclick = async () => {
+      const fh = await dir.getFileHandle(n);
+      const text = await (await fh.getFile()).text();
+      loadFromText(text, S.type);
+      S.fileHandle = fh; S.fileName = n; S.fileFolder = TYPES[S.type].folder.join("/");
+      $("fileLabel").textContent = TYPES[S.type].folder.join("/") + "/" + n;
+      $("fileLabel").classList.remove("unsaved");
+      $("openDlg").close();
+      render();
+      toast("Opened " + n);
+    };
+    list.appendChild(b);
+  });
+  $("openDlg").showModal();
+}
+
+function showHelp(extra){
+  $("helpBody").innerHTML =
+    "<p>Direct folder access needs Chrome or Edge, and the page has to be served rather than opened straight from disk. "+
+    "Firefox and Safari don't support it at all.</p>"+
+    "<p><b>You can ignore this.</b> Without it the tool still works - <b>Save</b> downloads the <code>.md</code> file and you drag it into the right folder.</p>"+
+    "<p>If you want the direct-write version: open a terminal in your <code>Character Database</code> folder and run "+
+    "<code>python -m http.server 8000</code>, then visit <code>http://localhost:8000/character-writer.html</code>.</p>"+
+    (extra ? "<p class='note'>Browser said: "+esc(extra)+"</p>" : "");
+  $("helpDlg").showModal();
+}
+
+/* ============================================================
+   HELP BUBBLES
+   ============================================================
+   One "?" per field that carries a `guide`. Guided mode already shows that
+   text one step at a time; form mode showed nothing, which is where "what
+   does Section mean?" came from. Same words, same source, both modes.
+   ============================================================ */
+
+function closeHelpPop(){
+  const p = document.getElementById("helpPop");
+  if(p) p.remove();
+}
+
+function helpBubble(text, label){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "helpbub";
+  b.textContent = "?";
+  b.title = "What's this?";
+  b.setAttribute("aria-label", "What is " + (label || "this field") + "?");
+  b.onclick = e => {
+    e.preventDefault(); e.stopPropagation();
+    const open = document.getElementById("helpPop");
+    const same = open && open.dataset.for === text;
+    closeHelpPop();
+    if(same) return;                        // clicking the same bubble closes it
+    const p = document.createElement("div");
+    p.className = "helppop"; p.id = "helpPop"; p.dataset.for = text;
+    p.textContent = text;
+    document.body.appendChild(p);
+    const r = b.getBoundingClientRect(), pad = 10;
+    p.style.left = Math.max(pad, Math.min(r.left, window.innerWidth - p.offsetWidth - pad)) + "px";
+    let top = r.bottom + 7;
+    if(top + p.offsetHeight > window.innerHeight - pad) top = Math.max(pad, r.top - p.offsetHeight - 7);
+    p.style.top = top + "px";
+  };
+  return b;
+}
+
+document.addEventListener("click", e=>{
+  const p = document.getElementById("helpPop");
+  if(p && !p.contains(e.target) && !e.target.closest(".helpbub")) closeHelpPop();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeHelpPop(); });
+
+/* ============================================================
+   FIELD WIDGETS
+   ============================================================ */
+
+function fieldEl(f){
+  const wrap = document.createElement("div");
+  wrap.className = "f";
+  const lab = document.createElement("label");
+  lab.textContent = f.label + (f.required ? " *" : "");
+  if(f.guide) lab.appendChild(helpBubble(f.guide, f.label));
+  wrap.appendChild(lab);
+  if(f.hint){
+    const h = document.createElement("div"); h.className="hint"; h.textContent=f.hint; wrap.appendChild(h);
+  }
+
+  if(f.type === "select"){
+    const sel = document.createElement("select");
+    sel.className = "field";
+    f.opts.forEach(o=>{
+      const op = document.createElement("option"); op.value=o; op.textContent=o; sel.appendChild(op);
+    });
+    sel.value = S.data[f.k] || f.def || f.opts[0];
+    sel.onchange = ()=>{ S.data[f.k]=sel.value; markDirty(); };
+    wrap.appendChild(sel);
+  }
+  else if(f.type === "list" || f.type === "linklist"){
+    wrap.appendChild(chipsEl(f));
+  }
+  else if(f.type === "color"){
+    wrap.appendChild(colorEl(f));
+  }
+  else {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = S.data[f.k] || "";
+    if(f.type === "link") inp.placeholder = "name of a place or thing";
+    inp.oninput = ()=>{
+      S.data[f.k] = inp.value;
+      if(f.k === "name") autoArt();
+      markDirty();
+    };
+    if(f.type === "link") attachSuggest(inp, f, v=>{
+      inp.value = v; S.data[f.k] = v; markDirty(); closeSuggest();
+    });
+    wrap.appendChild(inp);
+    if(f.k === "main_ref") wrap.appendChild(portraitZone(inp));
+  }
+  return wrap;
+}
+
+/* ---- portrait drop zone -------------------------------------------------
+   Rides under the main_ref field (form and guided mode both). Dropping or
+   picking an image copies it into art_folder - Art/<slug>/ if that's blank -
+   and points main_ref at it. The image is written immediately; main_ref
+   itself still lands in the .md on Save, like any other field. Only
+   web-ready formats are accepted, per GROUND-RULES rule 5. */
+const IMG_RE = /\.(png|jpe?g|webp|gif)$/i;
+let dzUrl = null;                 // last preview object URL, revoked on replace
+
+function portraitZone(refInput){
+  const zone = document.createElement("div");
+  zone.className = "dropzone";
+  zone.title = "Drop an image, or click to choose";
+  const img = document.createElement("img"); img.alt = ""; img.hidden = true;
+  const txt = document.createElement("span");
+  zone.append(img, txt);
+
+  const pick = document.createElement("input");
+  pick.type = "file"; pick.accept = "image/png,image/jpeg,image/webp,image/gif";
+  pick.hidden = true;
+  zone.appendChild(pick);
+
+  function setPreview(url){
+    if(dzUrl) URL.revokeObjectURL(dzUrl);
+    dzUrl = url;
+    img.src = url; img.hidden = false;
+  }
+
+  async function showCurrent(){
+    const rel = String(S.data.main_ref||"").trim();
+    if(!rel){
+      txt.innerHTML = "<b>Drop a portrait here</b>, or click to choose.<br>"+
+                      "It's copied into the art folder and set as the reference.";
+      return;
+    }
+    txt.innerHTML = "<b>"+esc(rel)+"</b><br>Drop a new image to replace the reference.";
+    if(!S.rootHandle) return;
+    try{
+      let h = S.rootHandle;
+      const parts = rel.replace(/\\/g,"/").split("/").filter(Boolean);
+      const name = parts.pop();
+      for(const p of parts) h = await h.getDirectoryHandle(p);
+      setPreview(URL.createObjectURL(await (await h.getFileHandle(name)).getFile()));
+    }catch(e){
+      txt.innerHTML = "<b>"+esc(rel)+"</b><br>Not found in the folder - drop an image to add it.";
+    }
+  }
+
+  async function take(file){
+    if(!file) return;
+    if(!IMG_RE.test(file.name)){
+      toast("Use a web-ready image - .png, .jpg, .webp or .gif.", true); return;
+    }
+    if(!S.rootHandle){
+      toast("Connect the folder first - without it the image can't be copied in.", true); return;
+    }
+    const rel = await writePortrait(file);
+    if(!rel) return;
+    S.data.main_ref = rel;
+    refInput.value = rel;
+    setPreview(URL.createObjectURL(file));
+    txt.innerHTML = "<b>"+esc(rel)+"</b><br>Drop a new image to replace the reference.";
+    markDirty();
+    toast("Portrait saved to "+rel+" - Save to record it in the file.");
+  }
+
+  zone.onclick = ()=>pick.click();
+  pick.onchange = ()=>{ take(pick.files[0]); pick.value = ""; };
+  zone.ondragover = e=>{ e.preventDefault(); zone.classList.add("drag"); };
+  zone.ondragleave = ()=>zone.classList.remove("drag");
+  zone.ondrop = e=>{
+    e.preventDefault(); zone.classList.remove("drag");
+    take([...e.dataTransfer.files].find(f=>IMG_RE.test(f.name)) || e.dataTransfer.files[0]);
+  };
+
+  showCurrent();
+  return zone;
+}
+
+async function writePortrait(file){
+  let folder = String(S.data.art_folder||"").trim().replace(/\\/g,"/");
+  if(!folder){
+    const s = slug(S.data.name);
+    if(!s){ toast("Give the character a name first - it decides the art folder.", true); return null; }
+    folder = "Art/"+s+"/";
+  }
+  const clean = folder.replace(/^\/+|\/+$/g,"");
+  const fname = file.name.replace(/[\\/:*?"<>|]/g,"-");
+  try{
+    let dir = S.rootHandle;
+    for(const p of clean.split("/")) dir = await dir.getDirectoryHandle(p, {create:true});
+    let exists = false;
+    try{ await dir.getFileHandle(fname); exists = true; }catch(e){}
+    if(exists && !confirm('"'+fname+'" already exists in '+clean+"/. Replace it?")) return null;
+    const fh = await dir.getFileHandle(fname, {create:true});
+    const w = await fh.createWritable();
+    await w.write(file);
+    await w.close();
+  }catch(e){
+    toast("Couldn't write the image: "+(e && e.message), true);
+    return null;
+  }
+  // art_folder was blank or has drifted from where the image actually went -
+  // record the folder that now holds the reference
+  if(String(S.data.art_folder||"").trim().replace(/\\/g,"/").replace(/^\/+|\/+$/g,"") !== clean){
+    S.data.art_folder = clean+"/";
+    const el = document.querySelector('[data-fk="art_folder"] input');
+    if(el) el.value = S.data.art_folder;
+  }
+  return clean+"/"+fname;
+}
+
+function autoArt(){
+  if(S.type !== "character") return;
+  const s = slug(S.data.name);
+  const cur = S.data.art_folder || "";
+  if(!cur || /^Art\/[a-z0-9-]*\/$/.test(cur)){
+    S.data.art_folder = s ? "Art/"+s+"/" : "";
+    const el = document.querySelector('[data-fk="art_folder"] input');
+    if(el) el.value = S.data.art_folder;
+  }
+}
+
+/* ---- suggestions - offer what already exists ----------------------------
+   Link fields and the tag box get a dropdown of entries and tags already in
+   the database, so "Vellhaven" doesn't become "Vellhavn" in one file and
+   silently disconnect. The pool is read from the folder on connect and
+   re-read after every save; it lives only in memory - nothing is stored
+   anywhere (GROUND-RULES rule 1). Typing something new still works exactly
+   as before: Enter keeps whatever you wrote.
+
+   Keyboard: arrows move through the list, Enter takes the highlighted one,
+   Esc closes. With nothing highlighted, Enter means "use my text as-is". */
+
+const SUGGEST_SOURCES = [
+  {kind:"character", path:["Characters"]},
+  {kind:"location",  path:["World","Locations"]},
+  {kind:"faction",   path:["World","Factions"]},
+  {kind:"story",     path:["Stories"]},
+  {kind:"event",     path:["Events"]}
+];
+/* which pools feed which field, by frontmatter key - one place to edit */
+const SUGGEST_KINDS = {
+  origin:["location"], parent_location:["location"], connections:["location"],
+  base:["location"], locations:["location"],
+  affiliations:["faction"], factions:["faction"], allies:["faction"], enemies:["faction"],
+  stories:["story"], branched_from:["story"],
+  notable_characters:["character"], members:["character"], characters:["character"], leader:["character"],
+  involves:["character","location","faction"],
+  tags:["tag"],
+  __person:["character"],      // name columns in Relationships / Members / Cast tables
+  __relation:["relation"]      // Relation column - the words the family tree can draw
+};
+const SUGGEST = { character:[], location:[], faction:[], story:[], event:[], tag:[],
+  /* static: the standard vocabulary from ROADMAP.md - the family tree only
+     draws rows using these words (plus common wordings). Free text still
+     allowed for everything else ("rival", "owes her money"). */
+  relation: ["parent","child","sibling","half-sibling","spouse",
+             "adoptive parent","adoptive child","step-parent","step-child"]
+};
+
+async function scanSuggestions(){
+  if(!S.rootHandle) return;
+  const pools = { character:[], location:[], faction:[], story:[], event:[] };
+  const tagCount = new Map();
+  for(const src of SUGGEST_SOURCES){
+    let dir = S.rootHandle, ok = true;
+    try{ for(const p of src.path) dir = await dir.getDirectoryHandle(p); }catch(e){ ok = false; }
+    if(!ok) continue;                       // folder not created yet - normal
+    try{
+      for await (const [n,h] of dir.entries()){
+        if(h.kind !== "file" || !/\.md$/i.test(n) || n.startsWith("_")) continue;
+        let name = n.replace(/\.md$/i, "");
+        try{
+          const text = await (await h.getFile()).text();
+          const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+          if(fm){
+            const nm = fm[1].match(/^name:\s*(.+)$/m);
+            if(nm){ const v = nm[1].trim().replace(/^["']|["']$/g, ""); if(v) name = v; }
+            const tg = fm[1].match(/^tags:\s*(.+)$/m);
+            if(tg) tg[1].trim().replace(/^\[|\]$/g, "").split(",")
+              .map(t=>t.trim().replace(/^["']|["']$/g, "")).filter(Boolean)
+              .forEach(t=>tagCount.set(t, (tagCount.get(t)||0) + 1));
+          }
+        }catch(e){}
+        pools[src.kind].push(name);
+      }
+    }catch(e){}
+  }
+  for(const k in pools) SUGGEST[k] = pools[k].sort((a,b)=>a.localeCompare(b));
+  SUGGEST.tag = [...tagCount.entries()].map(([v,n])=>({v,n}))
+    .sort((a,b)=> b.n - a.n || a.v.localeCompare(b.v));
+}
+
+let sugPop = null, sugHot = -1, sugPick = null, sugKeepFocus = false;
+
+function closeSuggest(){
+  if(sugPop){ sugPop.remove(); sugPop = null; }
+  sugHot = -1; sugPick = null; sugKeepFocus = false;
+}
+
+function sugButtons(){ return sugPop ? [...sugPop.querySelectorAll("button")] : []; }
+
+function sugHighlight(i){
+  const btns = sugButtons();
+  if(!btns.length) return;
+  sugHot = Math.max(0, Math.min(btns.length - 1, i));
+  btns.forEach((b,j)=>b.classList.toggle("hot", j === sugHot));
+  btns[sugHot].scrollIntoView({block:"nearest"});
+}
+
+function openSuggest(inp, f, pick){
+  const kinds = SUGGEST_KINDS[f.k];
+  if(!kinds) return;
+  const q = inp.value.trim().toLowerCase();
+  const cur = S.data[f.k];
+  const chosen = new Set((Array.isArray(cur) ? cur : [String(cur||"")])
+    .map(v=>String(v).replace(/^\[\[|\]\]$/g, "").toLowerCase()).filter(Boolean));
+
+  let opts = [];
+  for(const kind of kinds){
+    const pool = kind === "tag" ? SUGGEST.tag : SUGGEST[kind].map(v=>({v, n:0}));
+    for(const o of pool){
+      if(chosen.has(o.v.toLowerCase())) continue;
+      if(q && !o.v.toLowerCase().includes(q)) continue;
+      opts.push({v:o.v, n:o.n, kind});
+    }
+  }
+  if(q) opts.sort((a,b)=>
+    (a.v.toLowerCase().startsWith(q) ? 0 : 1) - (b.v.toLowerCase().startsWith(q) ? 0 : 1));
+  opts = opts.slice(0, 12);
+
+  closeSuggest();
+  if(!opts.length) return;
+  sugPick = pick;
+
+  const pop = document.createElement("div");
+  pop.className = "suggestpop";
+  const oneKind = kinds.length === 1;
+  opts.forEach(o=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    const nm = document.createElement("span"); nm.textContent = o.v;
+    b.appendChild(nm);
+    if(o.kind === "tag" && o.n > 1){
+      const u = document.createElement("span"); u.className = "uses";
+      u.textContent = "\u00d7" + o.n;
+      b.appendChild(u);
+    }
+    if(!oneKind){
+      const k = document.createElement("span"); k.className = "kind"; k.textContent = o.kind;
+      b.appendChild(k);
+    }
+    /* mousedown, not click - it fires before the input's blur, so the chips
+       editor doesn't commit the half-typed text first */
+    b.onmousedown = e=>{ e.preventDefault(); pick(o.v); };
+    pop.appendChild(b);
+  });
+  /* grabbing the pop's own scrollbar blurs the input - remember that the
+     blur came from inside the pop so the blur handler puts focus back
+     instead of closing */
+  pop.addEventListener("mousedown", ()=>{ sugKeepFocus = true; });
+  document.body.appendChild(pop);
+
+  const r = inp.getBoundingClientRect(), pad = 8;
+  pop.style.left = Math.max(pad, Math.min(r.left, window.innerWidth - pop.offsetWidth - pad)) + "px";
+  let top = r.bottom + 5;
+  if(top + pop.offsetHeight > window.innerHeight - pad) top = Math.max(pad, r.top - pop.offsetHeight - 5);
+  pop.style.top = top + "px";
+  sugPop = pop;
+}
+
+function attachSuggest(inp, f, pick){
+  if(!SUGGEST_KINDS[f.k]) return;
+  const show = ()=>openSuggest(inp, f, pick);
+  inp.addEventListener("input", show);
+  inp.addEventListener("focus", show);
+  /* a click on an already-focused box fires no focus event, so without this
+     the menu couldn't be reopened after adding a tag */
+  inp.addEventListener("click", show);
+  inp.addEventListener("blur", ()=>setTimeout(()=>{
+    if(sugKeepFocus){ sugKeepFocus = false; inp.focus(); return; }
+    closeSuggest();
+  }, 120));
+  const prev = inp.onkeydown;
+  inp.onkeydown = e=>{
+    if(sugPop){
+      if(e.key === "ArrowDown"){ e.preventDefault(); sugHighlight(sugHot + 1); return; }
+      if(e.key === "ArrowUp"){ e.preventDefault(); sugHighlight(sugHot - 1); return; }
+      if(e.key === "Enter" && sugHot >= 0){
+        e.preventDefault();
+        const b = sugButtons()[sugHot];
+        if(b && sugPick){ sugPick(b.firstChild.textContent); }
+        return;
+      }
+      if(e.key === "Escape"){ e.stopPropagation(); closeSuggest(); return; }
+    }
+    if(prev) prev.call(inp, e);
+  };
+}
+window.addEventListener("scroll", e=>{
+  if(sugPop && e.target instanceof Node && sugPop.contains(e.target)) return;
+  closeSuggest();
+}, true);
+window.addEventListener("resize", closeSuggest);
+
+/* ---- colour field ---------------------------------------------------------
+   Stores a plain `#rrggbb` string, or blank for "no colour of its own". The
+   value is world data about the entry, so it lives in the file like every
+   other field - the library reads it and tints that entry's page with it.
+   Blank is a real answer: the entry just wears its section's colour. */
+
+const COLOR_PRESETS = ["#a78bdb","#d4899b","#6da7d8","#7fa860","#c9a227","#c96a4a","#4fb896","#8f8878"];
+
+function colorEl(f){
+  const box = document.createElement("div");
+  box.className = "colorf";
+
+  const cur = ()=>String(S.data[f.k] || "").trim();
+  const valid = v => /^#[0-9a-f]{6}$/i.test(v);
+
+  const pick = document.createElement("input");
+  pick.type = "color";
+  pick.title = "Pick a colour";
+
+  const hex = document.createElement("input");
+  hex.type = "text";
+  hex.className = "hex";
+  hex.placeholder = "#a78bdb";
+  hex.spellcheck = false;
+
+  const clear = document.createElement("button");
+  clear.type = "button"; clear.className = "none"; clear.textContent = "clear";
+  clear.title = "No colour of its own - use the section's";
+
+  function paint(){
+    const v = cur();
+    hex.value = v;
+    pick.value = valid(v) ? v : "#a78bdb";
+    clear.hidden = !v;
+  }
+  function set(v){
+    S.data[f.k] = v;
+    paint(); markDirty();
+  }
+
+  pick.oninput = ()=>set(pick.value);
+  hex.oninput = ()=>{
+    let v = hex.value.trim();
+    if(v && !v.startsWith("#")) v = "#" + v;
+    S.data[f.k] = v;                       // keep what's typed, even mid-edit
+    if(valid(v)) pick.value = v;
+    clear.hidden = !v;
+    markDirty();
+  };
+  hex.onblur = ()=>{ if(cur() && !valid(cur())) toast("Colour should look like #a78bdb - leaving it as typed.", true); };
+  clear.onclick = ()=>set("");
+
+  const sw = document.createElement("div"); sw.className = "swatches";
+  COLOR_PRESETS.forEach(c=>{
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "sw"; b.style.background = c; b.title = c;
+    b.onclick = ()=>set(c);
+    sw.appendChild(b);
+  });
+
+  box.append(pick, hex, sw, clear);
+  paint();
+  return box;
+}
+
+function chipsEl(f){
+  const box = document.createElement("div");
+  box.className = "chips";
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.placeholder = "type and press Enter";
+
+  function redraw(){
+    [...box.querySelectorAll(".chip")].forEach(c=>c.remove());
+    (S.data[f.k]||[]).forEach((v,i)=>{
+      const c = document.createElement("span");
+      c.className = "chip";
+      c.textContent = v;
+      const x = document.createElement("button");
+      x.textContent = "×";
+      x.title = "remove";
+      x.onclick = ()=>{ S.data[f.k].splice(i,1); redraw(); markDirty(); };
+      c.appendChild(x);
+      box.insertBefore(c, inp);
+    });
+  }
+  inp.onkeydown = e=>{
+    if(e.key === "Enter" || e.key === ","){
+      e.preventDefault();
+      const v = inp.value.trim();
+      if(v){ (S.data[f.k] = S.data[f.k]||[]).push(v); inp.value=""; redraw(); markDirty(); }
+    } else if(e.key === "Backspace" && !inp.value && (S.data[f.k]||[]).length){
+      S.data[f.k].pop(); redraw(); markDirty();
+    }
+  };
+  inp.onblur = ()=>{
+    const v = inp.value.trim();
+    if(v){ (S.data[f.k] = S.data[f.k]||[]).push(v); inp.value=""; redraw(); markDirty(); }
+  };
+  /* dropdown of existing entries / tags; picking adds a chip (skipping
+     duplicates) and keeps the box focused for the next one */
+  attachSuggest(inp, f, v=>{
+    const list = (S.data[f.k] = S.data[f.k]||[]);
+    if(!list.some(x=>String(x).toLowerCase() === v.toLowerCase())) list.push(v);
+    inp.value = "";
+    redraw(); markDirty(); closeSuggest();
+    inp.focus();
+    /* reopen with the remaining options so several can be picked in a row */
+    inp.dispatchEvent(new Event("input"));
+  });
+  box.appendChild(inp);
+  redraw();
+  return box;
+}
+
+function colType(sec, i){
+  return (sec.colTypes && sec.colTypes[i]) || "text";
+}
+
+/* Widgets keep closures over (section, row index). A type switch or reload
+   replaces S.sections underneath them, so every handler checks the row is
+   still there before writing to it. */
+function rowAt(secKey, ri){
+  const t = S.sections[secKey];
+  return (Array.isArray(t) && Array.isArray(t[ri])) ? t[ri] : null;
+}
+
+function scaleWidget(sec, secKey, ri, ci, val){
+  const sc   = sec.scale || {min:0, max:100, step:1};
+  const MIN  = sc.min, MAX = sc.max;
+  const REST = (MIN < 0 && MAX > 0) ? 0 : Math.round((MIN+MAX)/2);   // where an unset slider sits
+
+  const box = document.createElement("div"); box.className = "scale";
+  const rng = document.createElement("input");
+  rng.type="range"; rng.min=String(MIN); rng.max=String(MAX); rng.step=String(sc.step||1);
+  const num = document.createElement("input");
+  num.type="number"; num.min=String(MIN); num.max=String(MAX); num.placeholder="-";
+  const clr = document.createElement("button");
+  clr.type="button"; clr.textContent="×"; clr.title="clear";
+
+  function paint(v){
+    const has = v !== "";
+    num.value = has ? v : "";
+    rng.value = has ? v : REST;
+    rng.classList.toggle("unset", !has);
+    rng.title = has ? v + " (" + MIN + " to " + MAX + ")" : "not set";
+    const n = has ? Number(v) : 0;
+    num.classList.toggle("neg", has && n < 0);
+    num.classList.toggle("pos", has && n > 0);
+  }
+  function set(v){
+    const row = rowAt(secKey, ri); if(!row) return;
+    row[ci] = v;
+    paint(v);
+    markDirty();
+  }
+  rng.oninput = ()=> set(String(rng.value));
+  num.oninput = ()=>{
+    const row = rowAt(secKey, ri); if(!row) return;
+    const s = num.value.trim();
+    if(s === "" || s === "-"){ row[ci]=""; rng.classList.add("unset"); rng.value=REST; markDirty(); return; }
+    let n = Math.round(Number(s));
+    if(!isFinite(n)) return;
+    n = Math.max(MIN, Math.min(MAX, n));
+    row[ci] = String(n);
+    rng.value = n; rng.classList.remove("unset");
+    num.classList.toggle("neg", n < 0);
+    num.classList.toggle("pos", n > 0);
+    markDirty();
+  };
+  num.onblur = ()=>{ const row = rowAt(secKey, ri); if(row) paint(row[ci] || ""); };
+  clr.onclick = ()=> set("");
+
+  paint(String(val||"").trim());
+  box.append(rng, num, clr);
+  return box;
+}
+
+function sectionEl(sec, big){
+  const wrap = document.createElement("div");
+  wrap.className = "f";
+  if(!big){
+    const lab = document.createElement("label"); lab.textContent = sec.k;
+    if(sec.guide) lab.appendChild(helpBubble(sec.guide, sec.k));
+    wrap.appendChild(lab);
+    if(sec.hint){ const h=document.createElement("div"); h.className="hint"; h.textContent=sec.hint; wrap.appendChild(h); }
+  }
+
+  if(sec.type === "table"){
+    const nc = sec.cols.length;
+    const tbl = document.createElement("table"); tbl.className = "ed";
+    const thead = document.createElement("tr");
+    if(sec.marker){
+      const th = document.createElement("th"); th.className="mk"; th.textContent="◆"; th.title="importance marker";
+      thead.appendChild(th);
+    }
+    sec.cols.forEach((c,ci)=>{
+      const th=document.createElement("th"); th.textContent=c;
+      if(colType(sec,ci)==="scale") th.className="sc";
+      thead.appendChild(th);
+    });
+    thead.appendChild(document.createElement("th"));
+    tbl.appendChild(thead);
+
+    function drawRows(){
+      [...tbl.querySelectorAll("tr.r")].forEach(r=>r.remove());
+      (S.sections[sec.k]||[]).forEach((row,ri)=>{
+        const tr = document.createElement("tr"); tr.className="r";
+
+        if(sec.marker){
+          const td = document.createElement("td"); td.className="mk";
+          const sel = document.createElement("select"); sel.className="mk";
+          MARKERS.forEach(m=>{
+            const o=document.createElement("option");
+            o.value=m.s; o.textContent = m.s || "–"; o.title=m.label;
+            sel.appendChild(o);
+          });
+          sel.value = row[nc] || "";
+          sel.classList.toggle("set", !!sel.value);
+          sel.title = (MARKERS.find(m=>m.s===sel.value)||MARKERS[0]).label;
+          sel.onchange = ()=>{
+            const row = rowAt(sec.k, ri); if(!row) return;
+            row[nc] = sel.value;
+            sel.classList.toggle("set", !!sel.value);
+            sel.title = (MARKERS.find(m=>m.s===sel.value)||MARKERS[0]).label;
+            markDirty();
+          };
+          td.appendChild(sel); tr.appendChild(td);
+        }
+
+        sec.cols.forEach((c,ci)=>{
+          const td = document.createElement("td");
+          const kind = colType(sec,ci);
+          if(kind === "scale"){
+            td.className = "sc";
+            td.appendChild(scaleWidget(sec, sec.k, ri, ci, row[ci]||""));
+          } else {
+            const inp = document.createElement("input"); inp.type="text";
+            inp.value = row[ci]||"";
+            if(ci === sec.linkCol) inp.placeholder = "name (becomes a link)";
+            inp.oninput = ()=>{ const row = rowAt(sec.k, ri); if(!row) return; row[ci] = inp.value; markDirty(); };
+            /* name columns suggest existing characters; the Relationships
+               table's Relation column suggests the tree's standard words */
+            const sugKey = ci === sec.linkCol ? "__person"
+                         : (sec.k === "Relationships" && ci === 1) ? "__relation" : null;
+            if(sugKey) attachSuggest(inp, {k:sugKey}, v=>{
+              const row = rowAt(sec.k, ri); if(!row) return;
+              inp.value = v; row[ci] = v; markDirty(); closeSuggest();
+            });
+            td.appendChild(inp);
+          }
+          tr.appendChild(td);
+        });
+
+        const td = document.createElement("td");
+        const del = document.createElement("button"); del.className="rowdel"; del.textContent="×"; del.title="remove row";
+        del.onclick = ()=>{
+          S.sections[sec.k].splice(ri,1);
+          if(!S.sections[sec.k].length) S.sections[sec.k] = [newRow(sec)];
+          drawRows(); markDirty();
+        };
+        td.appendChild(del); tr.appendChild(td);
+        tbl.appendChild(tr);
+      });
+    }
+    drawRows();
+    wrap.appendChild(tbl);
+    const add = document.createElement("button");
+    add.className = "btn sm"; add.textContent = "+ row";
+    add.onclick = ()=>{ S.sections[sec.k].push(newRow(sec)); drawRows(); markDirty(); };
+    wrap.appendChild(add);
+    if(sec.marker){
+      const lg = document.createElement("p"); lg.className="legend";
+      lg.innerHTML = MARKERS.filter(m=>m.s)
+        .map(m=>"<b>"+m.s+"</b> "+m.label.replace(/^\S+\s+/,""))
+        .join(" &nbsp;·&nbsp; ");
+      wrap.appendChild(lg);
+    }
+  }
+  else if(sec.type === "checklist"){
+    const host = document.createElement("div");
+    function drawQ(){
+      host.innerHTML = "";
+      (S.sections[sec.k]||[]).forEach((v,i)=>{
+        const row = document.createElement("div"); row.className="qrow";
+        const inp = document.createElement("input"); inp.type="text"; inp.value=v;
+        inp.placeholder = "something you haven't decided yet";
+        inp.oninput = ()=>{ if(!Array.isArray(S.sections[sec.k])) return; S.sections[sec.k][i]=inp.value; markDirty(); };
+        inp.onkeydown = e=>{
+          if(e.key==="Enter"){
+            e.preventDefault();
+            if(!Array.isArray(S.sections[sec.k])) return;
+            S.sections[sec.k].splice(i+1,0,""); drawQ();
+            const nx = host.querySelectorAll("input")[i+1]; if(nx) nx.focus();
+            markDirty();
+          }
+        };
+        const del = document.createElement("button"); del.className="rowdel"; del.textContent="×";
+        del.onclick = ()=>{
+          S.sections[sec.k].splice(i,1);
+          if(!S.sections[sec.k].length) S.sections[sec.k]=[""];
+          drawQ(); markDirty();
+        };
+        row.appendChild(inp); row.appendChild(del); host.appendChild(row);
+      });
+      const add = document.createElement("button");
+      add.className="btn sm"; add.textContent="+ question";
+      add.onclick = ()=>{ S.sections[sec.k].push(""); drawQ(); markDirty(); };
+      host.appendChild(add);
+    }
+    drawQ();
+    wrap.appendChild(host);
+  }
+  else {
+    const ta = document.createElement("textarea");
+    ta.className = "prose";
+    ta.value = S.sections[sec.k] || "";
+    if(big) ta.style.minHeight = "220px";
+    ta.oninput = ()=>{ S.sections[sec.k]=ta.value; markDirty(); };
+    wrap.appendChild(ta);
+  }
+  return wrap;
+}
+
+/* ============================================================
+   FORM MODE
+   ============================================================ */
+
+function renderForm(){
+  const T = TYPES[S.type];
+  const host = $("form");
+  host.innerHTML = "";
+
+  const core = ["name","aliases","status","tags"];
+  const g1 = group("Core");
+  const grid1 = document.createElement("div"); grid1.className="grid2";
+  T.fields.filter(f=>core.includes(f.k)).forEach(f=>{
+    const el = fieldEl(f); el.dataset.fk = f.k; grid1.appendChild(el);
+  });
+  g1.appendChild(grid1);
+
+  // hook
+  const hookWrap = document.createElement("div"); hookWrap.className="f";
+  const hl = document.createElement("label"); hl.textContent = "Tagline";
+  const hh = document.createElement("div"); hh.className="hint";
+  hh.textContent = "One line, shown as a quote at the top of the file. Blank is fine.";
+  const hta = document.createElement("textarea");
+  hta.value = S.hook || ""; hta.style.minHeight="60px";
+  hta.oninput = ()=>{ S.hook = hta.value; markDirty(); };
+  hookWrap.append(hl,hh,hta);
+  g1.appendChild(hookWrap);
+  host.appendChild(g1);
+
+  const rest = T.fields.filter(f=>!core.includes(f.k));
+  if(rest.length){
+    const g2 = group("Details");
+    const grid2 = document.createElement("div"); grid2.className="grid2";
+    rest.forEach(f=>{ const el = fieldEl(f); el.dataset.fk=f.k; grid2.appendChild(el); });
+    g2.appendChild(grid2);
+    host.appendChild(g2);
+  }
+
+  const g3 = group("Writing");
+  T.sections.forEach(sec=> g3.appendChild(sectionEl(sec,false)));
+  host.appendChild(g3);
+
+  function group(title){
+    const d = document.createElement("div"); d.className="group";
+    const h = document.createElement("h3"); h.textContent=title; d.appendChild(h);
+    return d;
+  }
+}
+
+/* ============================================================
+   GUIDED MODE
+   ============================================================ */
+
+function steps(){
+  const all = TYPES[S.type].guided || [];
+  return S.deep ? all : all.filter(s => s.tier === 1);
+}
+function extraCount(){
+  return (TYPES[S.type].guided || []).filter(s => s.tier === 2).length;
+}
+
+function renderGuided(){
+  const host = $("guided");
+  host.innerHTML = "";
+  const T = TYPES[S.type];
+  const all = steps();
+  S.step = Math.max(0, Math.min(S.step, all.length-1));
+  const st = all[S.step];
+  const last = S.step === all.length-1;
+
+  const bar = document.createElement("div"); bar.className="prog";
+  const fill = document.createElement("i");
+  fill.style.width = (all.length<2 ? 100 : (S.step/(all.length-1))*100).toFixed(1)+"%";
+  bar.appendChild(fill); host.appendChild(bar);
+
+  const n = document.createElement("div"); n.className="step-n";
+  n.textContent = T.label + " · " + (S.step+1) + " of " + all.length + (S.deep ? "" : " · essentials");
+  host.appendChild(n);
+
+  const q = document.createElement("h2"); q.className="step-q";
+  const g = document.createElement("p"); g.className="step-guide";
+
+  let body;
+  if(st.hook){
+    q.textContent = "The tagline - in one sentence, what is this?";
+    g.textContent = T.hookGuide || "One line that makes someone want to know more. Blank is fine.";
+    const ta = document.createElement("textarea");
+    ta.className="prose"; ta.style.minHeight="90px"; ta.value = S.hook||"";
+    ta.oninput = ()=>{ S.hook=ta.value; markDirty(); };
+    body = ta;
+  }
+  else if(st.fields){
+    const defs = st.fields.map(k => T.fields.find(f => f.k === k)).filter(Boolean);
+    const single = defs.length === 1;
+    q.textContent = st.q || (single ? defs[0].label : "");
+    g.textContent = st.guide || (single ? (defs[0].guide || defs[0].hint || "") : "");
+    body = document.createElement("div");
+    if(!single) body.className = "grid2";
+    defs.forEach(f=>{
+      const el = fieldEl(f);
+      el.dataset.fk = f.k;
+      if(single){
+        const l = el.querySelector("label"); if(l) l.remove();
+        const h = el.querySelector(".hint"); if(h && st.guide) h.remove();
+      }
+      body.appendChild(el);
+    });
+  }
+  else {
+    const sec = T.sections.find(s => s.k === st.section);
+    q.textContent = st.q || sec.k;
+    g.textContent = st.guide || sec.guide || sec.hint || "";
+    body = sectionEl(sec, true);
+  }
+
+  host.appendChild(q);
+  if(g.textContent) host.appendChild(g);
+  host.appendChild(body);
+
+  const nav = document.createElement("div"); nav.className="nav";
+
+  const back = document.createElement("button");
+  back.className="btn"; back.textContent="← Back";
+  back.disabled = S.step === 0;
+  back.onclick = ()=>{ S.step--; renderGuided(); };
+  nav.appendChild(back);
+
+  const next = document.createElement("button");
+  next.className="btn primary";
+  next.textContent = last ? "Done - review in Form" : "Next →";
+  next.onclick = ()=>{ if(last) setMode("form"); else { S.step++; renderGuided(); } };
+  nav.appendChild(next);
+
+  if(last && !S.deep && extraCount()){
+    const more = document.createElement("button");
+    more.className = "btn";
+    more.textContent = "Keep going (" + extraCount() + " more)";
+    more.title = "Optional depth: backstory, appearance, tags and so on";
+    more.onclick = ()=>{ S.deep = true; S.step = all.length; renderGuided(); };
+    nav.appendChild(more);
+  } else if(!last){
+    const skip = document.createElement("button");
+    skip.className="btn ghost"; skip.textContent="Skip";
+    skip.onclick = ()=>{ S.step++; renderGuided(); };
+    nav.appendChild(skip);
+  }
+
+  const hint = document.createElement("span");
+  hint.style.cssText="color:var(--ink-faint);font-size:12.5px;margin-left:auto";
+  hint.innerHTML = '<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> to continue';
+  nav.appendChild(hint);
+  host.appendChild(nav);
+
+  const first = body.querySelector("input,textarea,select");
+  if(first) setTimeout(()=>first.focus(), 30);
+}
+
+/* ============================================================
+   PREVIEW / RENDER / WIRING
+   ============================================================ */
+
+function renderPreview(){ $("previewText").textContent = buildMd(); }
+
+function render(){
+  if(S.mode === "form"){ $("form").hidden=false; $("guided").hidden=true; renderForm(); }
+  else { $("form").hidden=true; $("guided").hidden=false; renderGuided(); }
+  renderPreview();
+  syncDeleteBtn();
+}
+
+function setMode(m){
+  S.mode = m;
+  [...document.querySelectorAll("#modeSeg button")].forEach(b=>b.classList.toggle("on", b.dataset.mode===m));
+  render();
+}
+
+function initTypes(){
+  const sel = $("typeSel");
+  Object.keys(TYPES).forEach(k=>{
+    const o = document.createElement("option"); o.value=k; o.textContent=TYPES[k].label; sel.appendChild(o);
+  });
+  sel.value = S.type;
+  sel.onchange = ()=>{
+    if(S.dirty && !confirm("You have unsaved changes. Switch type and lose them?")){ sel.value=S.type; return; }
+    blank(sel.value); render();
+  };
+}
+
+/* Theme - the head script already applied it; this button cycles it and stores
+   the choice under the same key every tool reads. System is the default and
+   stays in the cycle, so following the OS is never a one-way door. */
+const SYSTEM_LIGHT = window.matchMedia("(prefers-color-scheme: light)");
+const THEME_ICON = {system:"◐", dark:"☾", light:"☀"};
+const THEME_TITLE = {system:"Theme: follows your system", dark:"Theme: dark", light:"Theme: light"};
+
+function themePref(){
+  try{
+    const v = localStorage.getItem("cdb-theme");
+    return (v==="light"||v==="dark") ? v : "system";
+  }catch(e){ return "system"; }
+}
+
+function applyTheme(pref){
+  const dark = pref==="system" ? !SYSTEM_LIGHT.matches : pref==="dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $("btnTheme").textContent = THEME_ICON[pref];
+  $("btnTheme").title = THEME_TITLE[pref] + " - click to change";
+}
+
+$("btnTheme").onclick = ()=>{
+  /* Flip to the opposite of what's actually on screen. The old
+     system -> dark -> light cycle spent a click doing nothing visible: on a
+     machine whose OS is dark, "follow system" and "dark" render identically,
+     so reaching light took two clicks while returning took one. Following the
+     system is still selectable from the dashboard's settings, which lists all
+     three explicitly. */
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{
+    if(next==="system") localStorage.removeItem("cdb-theme");
+    else localStorage.setItem("cdb-theme", next);
+  }catch(e){}
+  applyTheme(next);
+};
+SYSTEM_LIGHT.addEventListener("change", ()=>{ if(themePref()==="system") applyTheme("system"); });
+/* another tab (the home page, say) changed the theme - follow it */
+window.addEventListener("storage", e=>{
+  if(e.key===null || e.key==="cdb-look"){
+    let look=null;
+    try{ look=localStorage.getItem("cdb-look"); }catch(err){}
+    document.documentElement.dataset.look=(["atlas","board","iris","rose","slate"].indexOf(look) >= 0) ? look : "field";
+  }
+  if(e.key===null || e.key==="cdb-theme") applyTheme(themePref());
+});
+applyTheme(themePref());
+
+$("btnConnect").onclick = connectFolder;
+$("btnOpen").onclick = openPicker;
+$("btnNew").onclick = ()=>{
+  if(S.dirty && !confirm("Unsaved changes. Start a new entry anyway?")) return;
+  blank(S.type); render();
+};
+$("btnSave").onclick = save;
+$("btnDelete").onclick = deleteEntry;
+[...document.querySelectorAll("#modeSeg button")].forEach(b=> b.onclick = ()=>setMode(b.dataset.mode));
+
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && e.key==="s"){ e.preventDefault(); save(); }
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter" && S.mode==="guided"){
+    e.preventDefault();
+    const all = steps();
+    if(S.step < all.length-1){ S.step++; renderGuided(); } else setMode("form");
+  }
+});
+
+window.addEventListener("beforeunload", e=>{
+  if(S.dirty){ e.preventDefault(); e.returnValue=""; }
+});
+
+if(!FS_OK){ $("fsDot").className="dot warn"; $("fsLabel").textContent="download mode"; }
+else restoreFolder();
+
+/* Deep links from index.html - "#type=location&mode=guided", plus
+   "open=Name.md" to jump straight into editing an existing entry. All parts
+   are optional and anything unrecognised falls back to a blank character in
+   form mode, which is what opening the file bare has always done. */
+function fromHash(){
+  const p = new URLSearchParams(location.hash.replace(/^#/,""));
+  const type = p.get("type"), mode = p.get("mode"), open = p.get("open");
+  return {
+    type: TYPES[type] ? type : "character",
+    mode: (mode==="guided"||mode==="form") ? mode : "form",
+    open: open ? (/\.md$/i.test(open) ? open : open + ".md") : null
+  };
+}
+
+initTypes();
+const start = fromHash();
+blank(start.type);
+$("typeSel").value = start.type;
+setMode(start.mode);
+if(start.open){
+  PENDING_OPEN = { file: start.open, type: start.type };
+  tryPendingOpen();          // in case a folder is somehow already connected
+}
+
+/* ============================================================
+   TOOL NAV DRAWER
+   ============================================================
+   The three-line button in the header opens a list of every tool. Pure
+   navigation: it stores nothing and reads nothing from the database folder,
+   so it works before a folder is ever connected.
+
+   NAV_TOOLS is repeated in each tool on purpose - these pages are standalone
+   by design, with no build step and no shared runtime. Adding a tool later is
+   one line here, in each file.
+   ============================================================ */
+const NAV_TOOLS = [
+  {g:"⌂", label:"Home",        href:"index.html"},
+  {g:"✎", label:"Writer",      href:"character-writer.html"},
+  {g:"▤", label:"Library",     href:"library.html"},
+  {g:"⁂", label:"Family tree", href:"family-tree.html"},
+  {g:"◎", label:"World map",   href:"world-map.html"},
+  {g:"¶", label:"Manuscript",  href:"manuscript.html"},
+  {g:"▣", label:"Art board",   href:"art-board.html"},
+  {g:"⌕", label:"Search",      href:"search.html"},
+  {g:"◷", label:"Timeline",    href:"timeline.html"}
+];
+const NAV_HERE = "character-writer.html";
+/* This page lives in Tools/; the dashboard is one level up. NAV_TOOLS
+   entries keep the bare filename as their stable id (the saved order is
+   keyed on it), and these two turn an id into a link from here. */
+const NAV_BASE = "";
+const NAV_HOME = "../index.html";
+
+(function(){
+  const btn = document.getElementById("btnNav");
+  if(!btn) return;
+
+  const scrim = document.createElement("div");
+  scrim.id = "navScrim";
+
+  const drawer = document.createElement("nav");
+  drawer.id = "navDrawer";
+  drawer.setAttribute("aria-label", "Tools");
+
+  const h = document.createElement("h2");
+  h.textContent = "Tools";
+  drawer.appendChild(h);
+
+  /* The list order is yours - drag a row to move it. The order rides one
+     shared localStorage key so every tool shows the same list (pure UI
+     convenience, no world data - GROUND-RULES rule 1). A tool missing from
+     the saved order - a future new one - keeps its default place. */
+  const NAV_ORDER_KEY = "cdb-navorder";
+  function navOrder(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY) || "null"); }catch(e){}
+    if(!Array.isArray(saved)) return NAV_TOOLS.slice();
+    const byHref = new Map(NAV_TOOLS.map(t=>[t.href, t]));
+    const out = [];
+    saved.forEach(href=>{ const t = byHref.get(href); if(t){ out.push(t); byHref.delete(href); } });
+    NAV_TOOLS.forEach(t=>{ if(byHref.has(t.href)) out.push(t); });
+    return out;
+  }
+  function saveOrder(list){
+    try{ localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(list.map(t=>t.href))); }catch(e){}
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "navfoot";
+  foot.textContent = "Drag a row to reorder - every tool follows. They all read the same folder: connect it once and they remember it.";
+
+  let dragHref = null;
+  function renderNav(){
+    [...drawer.querySelectorAll("a, span.navhere")].forEach(el=>el.remove());
+    navOrder().forEach(t=>{
+      const here = t.href === NAV_HERE;
+      const el = document.createElement(here ? "span" : "a");
+      if(here){ el.className = "navhere"; el.setAttribute("aria-current","page"); }
+      else { el.href = t.href === "index.html" ? NAV_HOME : NAV_BASE + t.href; }
+      const g = document.createElement("span"); g.className = "g"; g.textContent = t.g;
+      const s = document.createElement("span"); s.textContent = t.label;
+      el.append(g, s);
+      el.draggable = true;
+      el.title = "Drag to reorder";
+      el.addEventListener("dragstart", e=>{
+        dragHref = t.href;
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", t.href); }catch(err){}
+      });
+      el.addEventListener("dragover", e=>{ if(dragHref && dragHref !== t.href) e.preventDefault(); });
+      el.addEventListener("drop", e=>{
+        e.preventDefault();
+        if(!dragHref || dragHref === t.href) return;
+        const cur = navOrder();
+        const from = cur.findIndex(x=>x.href === dragHref);
+        const to = cur.findIndex(x=>x.href === t.href);
+        if(from < 0 || to < 0) return;
+        const moved = cur.splice(from, 1)[0];
+        cur.splice(to, 0, moved);
+        saveOrder(cur);
+        dragHref = null;
+        renderNav();
+      });
+      el.addEventListener("dragend", ()=>{ dragHref = null; });
+      drawer.insertBefore(el, foot);
+    });
+  }
+
+  drawer.appendChild(foot);
+  renderNav();
+  /* a reorder made in another open tab shows up here too */
+  window.addEventListener("storage", e=>{
+    if(e.key === null || e.key === NAV_ORDER_KEY) renderNav();
+  });
+
+  document.body.append(scrim, drawer);
+
+  let open = false;
+  function setNav(next){
+    open = next;
+    scrim.classList.toggle("open", open);
+    drawer.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if(open){
+      const first = drawer.querySelector("a");
+      if(first) first.focus();
+    } else {
+      btn.focus();
+    }
+  }
+
+  btn.setAttribute("aria-expanded","false");
+  btn.onclick = e => { e.stopPropagation(); setNav(!open); };
+  scrim.onclick = () => setNav(false);
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape" && open){ e.stopPropagation(); setNav(false); }
+  }, true);
+})();
+</script>
+
+<!-- cloud storage: makes Supabase look like the folder these tools expect -->
+<script src="/world-codex/config.js"></script>
+<script src="/world-codex/cloud-fs.js"></script>
+</body>
+</html>

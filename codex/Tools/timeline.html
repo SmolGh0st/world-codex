@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline - Character Database</title>
+<script>
+/* Same boot script as every other tool: theme + look applied before first
+   paint, both read from the shared localStorage keys (GROUND-RULES rule 1 -
+   pure UI convenience, no world data). */
+(function(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cdb-theme"); }catch(e){}
+  if(pref !== "light" && pref !== "dark") pref = null;
+  var dark = pref ? pref==="dark"
+                  : !window.matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  var look = null;
+  try{ look = localStorage.getItem("cdb-look"); }catch(e){}
+  if(["atlas","board","iris","rose","slate"].indexOf(look) < 0) look = "field";
+  document.documentElement.dataset.look = look;
+})();
+</script>
+<style>
+  :root{
+    --bg:#14120f;
+    --panel:#1c1a16;
+    --panel-2:#232019;
+    --line:#332e25;
+    --line-soft:#28241d;
+    --ink:#ece4d6;
+    --ink-dim:#a99e8b;
+    --ink-faint:#6f665a;
+    --accent:#c9a227;
+    --accent-soft:#3a3018;
+    --accent-line:#4a3d1d;
+    --accent-hover:#dcb433;
+    --on-accent:#1a1508;
+    --btn-hover:#2a251b;
+    --danger:#c96a4a;
+    --danger-ink:#f0b4a0;
+    --ok:#7fa860;
+    --alt:#a48ee0;
+    --alt-soft:#241c38;
+    --alt-line:#453166;
+    --shadow:rgba(0,0,0,.45);
+    --radius:10px;
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f3ea;
+    --panel:#fffdf8;
+    --panel-2:#efe9dc;
+    --line:#dbd1bd;
+    --line-soft:#e9e1d1;
+    --ink:#2a251c;
+    --ink-dim:#5d5548;
+    --ink-faint:#877d6d;
+    --accent:#8a6d10;
+    --accent-soft:#f2e7c2;
+    --accent-line:#d8c68a;
+    --accent-hover:#a1811d;
+    --on-accent:#fffdf6;
+    --btn-hover:#e7dfcf;
+    --danger:#a8431f;
+    --danger-ink:#8c3316;
+    --ok:#4e7233;
+    --alt:#6b46b3;
+    --alt-soft:#ece3fa;
+    --alt-line:#cbb8ec;
+    --shadow:rgba(60,50,30,.18);
+    color-scheme:light;
+  }
+
+  /* ---------- looks - same three colour families as the rest of the suite */
+  :root[data-look="atlas"]{
+    --bg:#111814; --panel:#19231d; --panel-2:#212d26;
+    --line:#35453b; --line-soft:#273229;
+    --ink:#e2dec9; --ink-dim:#a39d87; --ink-faint:#6e796e;
+    --accent:#4fb896; --accent-soft:#163529; --accent-line:#2b5546;
+    --accent-hover:#65cbaa; --on-accent:#062318; --btn-hover:#243128;
+  }
+  :root[data-look="atlas"][data-theme="light"]{
+    --bg:#e7e7d8; --panel:#f4f4e8; --panel-2:#dfdfca;
+    --line:#c2c2a6; --line-soft:#d6d6c0;
+    --ink:#35322a; --ink-dim:#5e5947; --ink-faint:#83816b;
+    --accent:#1d6b58; --accent-soft:#d7eae1; --accent-line:#a6ccbd;
+    --accent-hover:#27816a; --on-accent:#f5fbf8; --btn-hover:#e5e5d2;
+    --shadow:rgba(55,65,50,.18);
+  }
+  :root[data-look="board"]{
+    --bg:#171310; --panel:#201a15; --panel-2:#2a2219;
+    --line:#3a2f24; --line-soft:#2b231c;
+    --ink:#e6dcc6; --ink-dim:#a69c85; --ink-faint:#786b57;
+    --accent:#b58f4a; --accent-soft:#372a15; --accent-line:#584421;
+    --accent-hover:#c8a35e; --on-accent:#251803; --btn-hover:#2f261d;
+  }
+  :root[data-look="board"][data-theme="light"]{
+    --bg:#e8dcc5; --panel:#f2e7d1; --panel-2:#dfd0b3;
+    --line:#c5af85; --line-soft:#d7c7a6;
+    --ink:#2e2822; --ink-dim:#5d5343; --ink-faint:#7c6e54;
+    --accent:#6e5624; --accent-soft:#ecdfbc; --accent-line:#cab383;
+    --accent-hover:#83682a; --on-accent:#fdf9ee; --btn-hover:#e7dabe;
+    --shadow:rgba(70,55,30,.18);
+  }
+  :root[data-look="iris"]{
+    --bg:#151218; --panel:#1d1924; --panel-2:#262030;
+    --line:#383046; --line-soft:#2b2537;
+    --ink:#e8e2f0; --ink-dim:#a79fb6; --ink-faint:#6f6880;
+    --accent:#a78bdb; --accent-soft:#2c2344; --accent-line:#473a66;
+    --accent-hover:#baa2e8; --on-accent:#170f26; --btn-hover:#2a2438;
+  }
+  :root[data-look="iris"][data-theme="light"]{
+    --bg:#f2eef7; --panel:#fcfaff; --panel-2:#e7e0f0;
+    --line:#cfc3e0; --line-soft:#ded4ea;
+    --ink:#2b2438; --ink-dim:#5a5168; --ink-faint:#837a92;
+    --accent:#6b4fa8; --accent-soft:#e6dcf5; --accent-line:#c3aee3;
+    --accent-hover:#7d61bd; --on-accent:#f9f6ff; --btn-hover:#e3dbef;
+    --shadow:rgba(60,50,80,.18);
+  }
+  :root[data-look="rose"]{
+    --bg:#191214; --panel:#221a1d; --panel-2:#2c2226;
+    --line:#443037; --line-soft:#332529;
+    --ink:#eee0e4; --ink-dim:#b39ba3; --ink-faint:#7d6970;
+    --accent:#d4899b; --accent-soft:#3d222b; --accent-line:#5e3644;
+    --accent-hover:#e29fb0; --on-accent:#260f16; --btn-hover:#2f2529;
+  }
+  :root[data-look="rose"][data-theme="light"]{
+    --bg:#f7eef0; --panel:#fffafb; --panel-2:#f0e1e5;
+    --line:#ddc3ca; --line-soft:#ead5da;
+    --ink:#35262b; --ink-dim:#645057; --ink-faint:#8f7a81;
+    --accent:#a04360; --accent-soft:#f4dbe3; --accent-line:#dfadbd;
+    --accent-hover:#b55573; --on-accent:#fff7f9; --btn-hover:#eddde1;
+    --shadow:rgba(80,50,60,.18);
+  }
+  :root[data-look="slate"]{
+    --bg:#10141a; --panel:#171d26; --panel-2:#1f2733;
+    --line:#303c4d; --line-soft:#26303e;
+    --ink:#dde4ee; --ink-dim:#94a1b4; --ink-faint:#627082;
+    --accent:#6da7d8; --accent-soft:#16293c; --accent-line:#2a4a68;
+    --accent-hover:#85b9e4; --on-accent:#06131f; --btn-hover:#232d3a;
+  }
+  :root[data-look="slate"][data-theme="light"]{
+    --bg:#e9edf2; --panel:#f7f9fc; --panel-2:#dde4ec;
+    --line:#bcc8d6; --line-soft:#d2dae4;
+    --ink:#27303b; --ink-dim:#4f5b6a; --ink-faint:#77828f;
+    --accent:#2c6394; --accent-soft:#d9e7f3; --accent-line:#a5c4dd;
+    --accent-hover:#3a76ab; --on-accent:#f6fafd; --btn-hover:#dbe2ea;
+    --shadow:rgba(45,60,80,.18);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);min-height:100vh;
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;font-size:12.5px}
+
+  header{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:var(--panel);position:sticky;top:0;z-index:20;
+  }
+  a.brand{display:block;color:var(--ink)}
+  a.brand:hover{text-decoration:none;color:var(--accent)}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .brand{font-weight:650;letter-spacing:.2px}
+  .grow{flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);display:inline-block}
+  .dot.on{background:var(--ok)}
+  .dot.warn{background:var(--accent)}
+
+  button{font:inherit;color:inherit}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer;transition:.13s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent);background:var(--btn-hover)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  main{max-width:980px;margin:0 auto;padding:34px 26px 100px}
+  .hero{margin:0 0 22px}
+  .hero h1{margin:0 0 6px;font-size:30px;letter-spacing:.2px;font-weight:600}
+  .hero p{margin:0;color:var(--ink-dim);max-width:70ch}
+
+  .blank{
+    text-align:center;padding:60px 20px;color:var(--ink-faint);font-size:14px;line-height:1.7;
+  }
+  .blank div{max-width:460px;margin:0 auto}
+  .blank h2{font-family:ui-serif,Georgia,serif;font-weight:500;font-size:24px;color:var(--ink-dim);margin:0 0 10px}
+
+  .toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--line-soft);
+  }
+  .eraLegend{display:flex;gap:7px;flex-wrap:wrap}
+  .eraChip{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+    padding:5px 11px;font-size:12px;cursor:pointer;background:var(--panel-2);color:var(--ink-dim);transition:.12s;
+  }
+  .eraChip:hover{border-color:var(--accent)}
+  .eraChip.off{opacity:.4}
+  .eraChip .sw{width:9px;height:9px;border-radius:50%;flex:none}
+  .toggles{display:flex;gap:14px;flex-wrap:wrap}
+  .chk{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--ink-dim);white-space:nowrap}
+  .chk input{accent-color:var(--accent);cursor:pointer}
+
+  .eraGroup{
+    margin-bottom:30px;border-left:3px solid var(--era-line,var(--line));
+    padding-left:16px;
+  }
+  .eraGroup.undated,.eraGroup.aux{border-left-color:var(--line)}
+  .eraHead{
+    display:flex;align-items:baseline;gap:10px;margin:0 0 12px;
+    font-family:ui-serif,Georgia,serif;font-weight:500;font-size:19px;color:var(--ink);
+  }
+  .eraGroup:not(.undated):not(.aux) .eraHead{color:var(--era-accent,var(--accent))}
+  .eraHead .n{font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;color:var(--ink-faint);font-weight:400}
+  .cards{display:flex;flex-direction:column;gap:10px}
+
+  .card{
+    display:flex;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 16px;
+  }
+  .card .when{
+    flex:0 0 128px;font-size:12.5px;color:var(--ink-faint);padding-top:2px;line-height:1.5;
+  }
+  .card .when b{display:block;color:var(--ink-dim);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+  .card .main{flex:1;min-width:0}
+  .card h3{margin:0;font-size:16px;font-weight:600;display:inline}
+  .card h3 a{color:var(--ink)}
+  .card h3 a:hover{color:var(--accent)}
+  .status{font-size:11px;color:var(--ink-faint);margin-left:8px;text-transform:uppercase;letter-spacing:.4px}
+  .tagline{margin:4px 0 0;font-size:13px;font-style:italic;color:var(--ink-dim)}
+  .what{margin:7px 0 0;font-size:13.5px;color:var(--ink-dim);line-height:1.55}
+  .au-badge{
+    display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;
+    font-weight:700;color:var(--alt);border:1px solid var(--alt-line);background:var(--alt-soft);
+    border-radius:999px;padding:2px 8px;
+  }
+  .branch{margin:6px 0 0;font-size:12.5px;color:var(--ink-dim)}
+  .branch .chip{font-size:11px;border-color:var(--alt-line);color:var(--alt)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);
+    padding:3px 9px;border-radius:999px;font-size:11.5px;cursor:pointer;transition:.12s;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--ink)}
+
+  .lifeRow{
+    display:flex;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px;
+  }
+  .lifeRow:last-child{border-bottom:0}
+  .lifeRow a{color:var(--ink);font-weight:600}
+  .lifeRow a:hover{color:var(--accent)}
+  .lifeRow .span{color:var(--ink-faint);font-size:12.5px}
+
+  .empty{color:var(--ink-faint);font-size:13px;padding:8px 0}
+
+  /* ---------- peek popover, same shape as world-map's / family-tree's ---------- */
+  .pop{
+    position:fixed;z-index:70;background:var(--panel);border:1px solid var(--line);
+    border-radius:11px;padding:13px 15px;box-shadow:0 14px 34px var(--shadow);
+    width:290px;font-size:13px;color:var(--ink-dim);line-height:1.55;
+  }
+  .pop h5{margin:0 0 2px;font-family:ui-serif,Georgia,serif;font-weight:500;font-size:17px;color:var(--ink)}
+  .pop .kind{font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+  .pop .kind.miss{font-style:italic}
+  .pop .tl{font-style:italic;border-left:2px solid var(--accent-line);padding-left:9px;margin:0 0 8px;color:var(--ink-dim)}
+  .pop .bd{margin:0;max-height:150px;overflow:auto}
+  .pop .miss{color:var(--ink-faint);font-style:italic;margin:0}
+  .pop .foot{margin-top:11px}
+  .pop .foot a{color:var(--accent);font-size:12.5px}
+  .pop .close{
+    position:absolute;top:10px;right:11px;background:none;border:0;color:var(--ink-faint);
+    cursor:pointer;font-size:16px;line-height:1;
+  }
+  .pop .close:hover{color:var(--danger)}
+
+  dialog{
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    border-radius:12px;padding:22px 24px;max-width:560px;font:inherit;
+  }
+  dialog::backdrop{background:rgba(0,0,0,.45)}
+  dialog h3{margin:0 0 10px;font-family:ui-serif,Georgia,serif;font-weight:500;font-size:21px}
+  dialog p,dialog li{font-size:13.5px;color:var(--ink-dim);line-height:1.65}
+
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 15px;font-size:13.5px;opacity:0;pointer-events:none;transition:.18s;max-width:min(520px,88vw);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%)}
+  #toast.bad{border-color:var(--danger);color:var(--danger-ink)}
+
+  /* ---------- tool nav drawer ---------------------------------------------
+     The three-line button at the far left of every header opens the same
+     list of every tool, so you can move between them without going via the
+     home page. Identical markup, CSS and behaviour in all of them; the tool
+     you're already in is marked and not a link.
+
+     The list is duplicated per file rather than shared, because these pages
+     are deliberately standalone - no build step, no common runtime. Adding a
+     tool later means one line in each NAV_TOOLS array. */
+  .navbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:32px;flex:none;border-radius:8px;cursor:pointer;
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:0;transition:.13s;
+  }
+  .navbtn span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:1px}
+  .navbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .navbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #navScrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .16s;
+  }
+  #navScrim.open{opacity:1;pointer-events:auto}
+  #navDrawer{
+    position:fixed;top:0;left:0;bottom:0;width:248px;z-index:301;
+    background:var(--panel);border-right:1px solid var(--line);
+    box-shadow:0 0 40px var(--shadow);
+    transform:translateX(-101%);transition:transform .18s ease;
+    display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;
+  }
+  #navDrawer.open{transform:none}
+  #navDrawer h2{
+    margin:2px 8px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  #navDrawer a,#navDrawer span.navhere{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+    color:var(--ink);font-size:14px;text-decoration:none;
+  }
+  #navDrawer a:hover{background:var(--btn-hover);text-decoration:none;color:var(--ink)}
+  #navDrawer a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  #navDrawer span.navhere{background:var(--accent-soft);font-weight:600}
+  #navDrawer .g{width:20px;text-align:center;color:var(--accent);font-size:15px;flex:none}
+  #navDrawer .navfoot{
+    margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line-soft);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5;
+  }
+  @media (prefers-reduced-motion:reduce){
+    #navDrawer,#navScrim{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="navbtn" id="btnNav" title="All tools" aria-label="All tools"><span></span><span></span><span></span></button>
+  <a class="brand" href="index.html">Timeline<small>character database</small></a>
+  <button class="btn" id="btnConnect"><span class="dot" id="fsDot"></span><span id="fsLabel">connect folder</span></button>
+  <button class="btn" id="btnReload" title="Re-read the files from disk">Reload</button>
+  <div class="grow"></div>
+  <button class="btn" id="btnTheme" title="Light / dark" aria-label="Light or dark">☾</button>
+  <button class="btn" id="btnHelp">?</button>
+</header>
+
+<main>
+  <div class="hero">
+    <h1 class="serif">Timeline</h1>
+    <p>World events and character lifespans on one scrollable page, grouped into eras.
+       Reads straight from <code>Events/</code>, each story's <code>timeline_position:</code>,
+       and <code>born:</code> / <code>died:</code> on characters - nothing is drawn by hand.</p>
+  </div>
+
+  <div class="blank" id="blank">
+    <div>
+      <h2 class="serif">No timeline yet</h2>
+      Connect the <b>Character Database</b> folder above. If it has anything in
+      <code>Events/</code>, a story with <code>timeline_position:</code> set, or a
+      character with <code>born:</code> / <code>died:</code>, it shows up here.
+      <div style="margin-top:16px">
+        <a class="btn" href="character-writer.html#type=event&amp;mode=guided" id="blankNewEvent" style="display:none">Write the first event →</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="body" hidden>
+    <div class="toolbar">
+      <div class="eraLegend" id="eraLegend"></div>
+      <div class="toggles">
+        <label class="chk"><input type="checkbox" id="chkUndated" checked> events with no era</label>
+        <label class="chk"><input type="checkbox" id="chkStories" checked> story placements</label>
+        <label class="chk"><input type="checkbox" id="chkLife" checked> lifespans</label>
+      </div>
+    </div>
+    <div id="track"></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<dialog id="helpDlg">
+  <h3 class="serif">About this timeline</h3>
+  <p>Three sources, all read directly off disk - nothing is stored anywhere but the files:</p>
+  <ul>
+    <li><b>Events</b> - one file per <code>Events/*.md</code>, grouped by its <code>era:</code>
+        field and ordered within that era by any number found in its <code>date:</code> text.</li>
+    <li><b>Story placements</b> - any <code>Stories/*.md</code> with <code>timeline_position:</code>
+        set, ordered the same way. One with <code>branched_from:</code> set (written automatically by
+        <code>manuscript.html</code>'s ⑂ Branch button) shows which story it forks from and where -
+        it also inherits that story's <code>timeline_position:</code>, which is why a branch lands
+        right next to its parent instead of somewhere unrelated.</li>
+    <li><b>Lifespans</b> - any <code>Characters/*.md</code> with <code>born:</code> and/or
+        <code>died:</code> set.</li>
+  </ul>
+  <p>Era order and colour come from <code>World/Calendar.md</code> - an era not listed
+     there still works, it just sorts after the listed ones and gets an automatic colour.</p>
+  <p>This is a first draft: read-only. Write events and lifespans in
+     <a href="character-writer.html#type=event&amp;mode=guided">the writer</a> for now;
+     editing straight from this page is a planned upgrade, same as the world map got.</p>
+  <div style="text-align:right;margin-top:14px"><button class="btn" onclick="helpDlg.close()">Close</button></div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ============================================================
+   TIMELINE - a sibling to world-map.html and search.html
+   ============================================================
+   Read-only first draft (see ROADMAP.md / README.md). Reads Events/*.md,
+   Stories/*.md's timeline_position:, and born:/died: on Characters/*.md, and
+   groups by era: (ordered and coloured from World/Calendar.md, same pattern
+   Regions.md uses for the world map). Nothing here writes back to disk -
+   editing is a deliberately deferred upgrade, like the world map's editing
+   tier was built in a later pass.
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const FS_OK = typeof window.showDirectoryPicker === "function";
+
+function esc(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+const keyOf = n => String(n||"").trim().toLowerCase();
+
+/* ---------- markdown parsing (same shapes as world-map.html / search.html) ---------- */
+function parseFrontmatter(text){
+  const m=text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const fm={};
+  if(!m) return fm;
+  const lines=m[1].split(/\r?\n/);
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    if(/^\s*#/.test(line) || !line.trim()) continue;
+    if(/^[ \t]*-[ \t]/.test(line)) continue;
+    const ci=line.indexOf(":");
+    if(ci<1) continue;
+    const k=line.slice(0,ci).trim();
+    let v=line.slice(ci+1).trim().replace(/\s+#.*$/,"");
+    if(/^\[.*\]$/.test(v)){
+      v=v.slice(1,-1).split(",").map(s=>s.trim().replace(/^["']|["']$/g,"")).filter(Boolean);
+    } else if(v==="" && /^[ \t]*-[ \t]/.test(lines[i+1]||"")){
+      const arr=[];
+      while(/^[ \t]*-[ \t]/.test(lines[i+1]||"")){
+        i++;
+        arr.push(lines[i].replace(/^[ \t]*-[ \t]+/,"").replace(/\s+#.*$/,"")
+          .trim().replace(/^["']|["']$/g,""));
+      }
+      v=arr.filter(Boolean);
+    } else {
+      v=v.replace(/^["']|["']$/g,"");
+    }
+    fm[k]=v;
+  }
+  return fm;
+}
+function firstTagline(text){
+  const body=text.replace(/^---\r?\n[\s\S]*?\r?\n---/,"");
+  const m=body.match(/^\s*>\s?(.+)$/m);
+  return m ? m[1].trim() : "";
+}
+function sectionText(text, heading){
+  const lines=text.split(/\r?\n/);
+  const want=("## "+heading).toLowerCase();
+  let start=-1;
+  for(let i=0;i<lines.length;i++){ if(lines[i].trim().toLowerCase()===want){ start=i; break; } }
+  if(start<0) return "";
+  let end=lines.length;
+  for(let i=start+1;i<lines.length;i++){ if(/^##\s/.test(lines[i])){ end=i; break; } }
+  return lines.slice(start+1,end).join("\n").trim();
+}
+function cleanName(cell){
+  let v=String(cell||"").trim().replace(/^[★◆▲●✕?]\s*/,"");
+  const m=v.match(/\[\[([^\]|]+)(\|[^\]]*)?\]\]/);
+  if(m) return m[1].trim();
+  return v.replace(/^\[+|\]+$/g,"").trim();
+}
+function asList(v){
+  if(Array.isArray(v)) return v.map(cleanName).filter(Boolean);
+  const s=String(v||"").trim();
+  if(!s) return [];
+  return [cleanName(s)].filter(Boolean);
+}
+/* the only number this tool trusts: the first one found in a free-text date.
+   No calendar is decided (see World/Calendar.md), so this is a best-effort
+   sort, not a real chronology - items with no number just sort after ones
+   that have it. */
+function numHint(s){
+  const m=String(s||"").match(/-?\d+(\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+/* ---------- colour maths (verbatim from world-map.html, already tested there) ---------- */
+const PALETTE = ["#7f77dd","#1d9e75","#d85a30","#378add","#d4537e","#ba7517","#5dcaa5","#8a7433","#639922","#b5766a"];
+function hexToRgb(h){
+  const m=String(h||"").trim().match(/^#?([0-9a-f]{6})$/i);
+  if(!m) return null;
+  const n=parseInt(m[1],16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function rgbToHex(c){
+  return "#"+c.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+}
+function mix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function hashIdx(s,n){
+  let h=0;
+  for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  return h%n;
+}
+function relLum(c){
+  const s=c.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+}
+function contrast(a,b){
+  const l1=relLum(a), l2=relLum(b);
+  return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+}
+function readableInk(base, fill, dark){
+  const towards = dark ? [255,255,255] : [0,0,0];
+  let best=mix(base,towards,0.34);
+  for(let t=0.34;t<=0.96;t+=0.06){
+    best=mix(base,towards,t);
+    if(contrast(best,fill)>=4.5) return best;
+  }
+  return towards;
+}
+function eraStyle(eraName){
+  const rec=S.eras.get(keyOf(eraName));
+  const base=hexToRgb((rec&&rec.color)||"") || hexToRgb(PALETTE[hashIdx(keyOf(eraName),PALETTE.length)]);
+  const dark=document.documentElement.dataset.theme!=="light";
+  const bg=hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--bg").trim())
+        || (dark?[20,18,15]:[255,253,248]);
+  return {
+    accent: rgbToHex(base),
+    line: rgbToHex(mix(base,bg,dark?0.42:0.38))
+  };
+}
+
+/* ---------- state ---------- */
+const S = {
+  root:null, saved:null, readOnly:false,
+  events:[], storyMarks:[], lifespans:[],
+  eras:new Map(),     // key -> {name, order, color, notes}
+  peek:new Map(),     // key -> {name, kind, fileName, status, tagline, summary}
+  hiddenEras:new Set(),
+  showUndated:true, showStories:true, showLife:true
+};
+
+/* ---------- ingesting one file into its shape ---------- */
+function ingestEvent(fileName, text){
+  const fm=parseFrontmatter(text);
+  const name=(fm.name&&String(fm.name).trim())||fileName.replace(/\.md$/i,"");
+  const date=(fm.date&&String(fm.date).trim())||"";
+  return {
+    key:keyOf(name), name, fileName, date, hint:numHint(date),
+    era:(fm.era&&String(fm.era).trim())||"",
+    status:(fm.status&&String(fm.status).trim())||"",
+    involves:asList(fm.involves),
+    tagline:firstTagline(text),
+    what:sectionText(text,"What Happened")
+  };
+}
+function ingestStoryMark(fileName, text){
+  const fm=parseFrontmatter(text);
+  const pos=(fm.timeline_position&&String(fm.timeline_position).trim())||"";
+  if(!pos) return null;
+  const name=(fm.name&&String(fm.name).trim())||fileName.replace(/\.md$/i,"");
+  return {
+    key:keyOf(name), name, fileName, date:pos, hint:numHint(pos),
+    status:(fm.status&&String(fm.status).trim())||"",
+    involves:asList(fm.characters).concat(asList(fm.locations)),
+    tagline:firstTagline(text),
+    what:sectionText(text,"Premise"),
+    universe:(fm.universe&&String(fm.universe).trim())||"",
+    branchFrom:cleanName(fm.branched_from||""),
+    branchPoint:(fm.branch_point&&String(fm.branch_point).trim())||""
+  };
+}
+function ingestLifespan(fileName, text){
+  const fm=parseFrontmatter(text);
+  const born=(fm.born&&String(fm.born).trim())||"";
+  const died=(fm.died&&String(fm.died).trim())||"";
+  if(!born && !died) return null;
+  const name=(fm.name&&String(fm.name).trim())||fileName.replace(/\.md$/i,"");
+  const h1=numHint(born), h2=numHint(died);
+  return { key:keyOf(name), name, fileName, born, died, hint: h1!=null?h1:h2 };
+}
+function ingestPeek(fileName, text, kind){
+  const fm=parseFrontmatter(text);
+  const name=(fm.name&&String(fm.name).trim())||fileName.replace(/\.md$/i,"");
+  S.peek.set(keyOf(name),{
+    name, kind, fileName,
+    status:(fm.status&&String(fm.status).trim())||"",
+    tagline:firstTagline(text),
+    summary:sectionText(text,"Summary")||sectionText(text,"What They Want")||sectionText(text,"Premise")||sectionText(text,"Personality")||sectionText(text,"What Happened")
+  });
+}
+function parseCalendar(text){
+  const map=new Map();
+  String(text||"").split(/\r?\n/).forEach(line=>{
+    const t=line.trim();
+    if(!t.startsWith("|")) return;
+    if(/^\|[\s:|-]+\|$/.test(t)) return;
+    const cells=t.replace(/^\||\|$/g,"").split(/(?<!\\)\|/).map(c=>c.replace(/\\\|/g,"|").trim());
+    if(/^era$/i.test(cells[0]||"")) return;
+    const name=cleanName(cells[0]);
+    if(!name) return;
+    const order=parseFloat(cells[1]);
+    const color=(cells[2]||"").trim();
+    map.set(keyOf(name),{
+      name,
+      order:Number.isFinite(order)?order:null,
+      color:/^#[0-9a-f]{6}$/i.test(color)?color.toLowerCase():"",
+      notes:(cells[3]||"").trim()
+    });
+  });
+  return map;
+}
+
+/* ---------- remembering the folder (shared entry, same as the other tools) ---------- */
+const FOLDER_DB="cdb-folder", FOLDER_STORE="handles", FOLDER_KEY="root";
+function folderTx(mode){
+  return new Promise((res,rej)=>{
+    let rq;
+    try{ rq=indexedDB.open(FOLDER_DB,1); }catch(e){ rej(e); return; }
+    rq.onupgradeneeded=()=>rq.result.createObjectStore(FOLDER_STORE);
+    rq.onerror=()=>rej(rq.error);
+    rq.onsuccess=()=>{
+      const db=rq.result, tx=db.transaction(FOLDER_STORE,mode);
+      tx.oncomplete=()=>db.close();
+      res(tx.objectStore(FOLDER_STORE));
+    };
+  });
+}
+async function rememberFolder(handle){ try{ (await folderTx("readwrite")).put(handle,FOLDER_KEY); }catch(e){} }
+async function recallFolder(){
+  try{
+    const store=await folderTx("readonly");
+    return await new Promise(res=>{
+      const q=store.get(FOLDER_KEY);
+      q.onsuccess=()=>res(q.result||null);
+      q.onerror=()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+
+function setFolderUI(state, name){
+  const dot=$("fsDot"), label=$("fsLabel");
+  if(state==="on"){ dot.className="dot on"; label.textContent=name; }
+  else if(state==="stale"){ dot.className="dot warn"; label.textContent='"'+name+'" - reconnect'; }
+  else { dot.className="dot"; label.textContent="connect folder"; }
+}
+
+async function useFolder(handle, quiet){
+  let ok=false;
+  try{ await handle.getDirectoryHandle("Characters"); ok=true; }catch(e){}
+  if(!ok){
+    if(!quiet) toast('No "Characters" folder in "'+handle.name+'". Pick the Character Database folder.', true);
+    return false;
+  }
+  S.root=handle; S.saved=handle; S.readOnly=false;
+  rememberFolder(handle);
+  setFolderUI("on", handle.name);
+  await loadAll();
+  return true;
+}
+async function connectFolder(){
+  if(!FS_OK){ pickFallback(); return; }
+  if(S.saved && S.saved!==S.root){
+    try{
+      if(await S.saved.requestPermission({mode:"read"})==="granted"){
+        if(await useFolder(S.saved)) return;
+      }
+    }catch(e){}
+  }
+  try{
+    await useFolder(await window.showDirectoryPicker({mode:"read"}));
+  }catch(e){
+    if(e && e.name==="AbortError") return;
+    toast("Couldn't open the folder: "+(e&&e.message), true);
+  }
+}
+async function restoreFolder(){
+  if(!FS_OK) return;
+  const h=await recallFolder();
+  if(!h) return;
+  S.saved=h;
+  let perm="prompt";
+  try{ perm=await h.queryPermission({mode:"read"}); }catch(e){}
+  if(perm==="granted" && await useFolder(h,true)) return;
+  setFolderUI("stale", h.name);
+}
+function pickFallback(){
+  const inp=document.createElement("input");
+  inp.type="file"; inp.webkitdirectory=true; inp.multiple=true;
+  inp.onchange=async ()=>{
+    const files=[...inp.files];
+    const rel=f=>String(f.webkitRelativePath||f.name).split("/").slice(1).join("/");
+    if(!files.some(f=>rel(f).toLowerCase().startsWith("characters/"))){
+      toast("No Characters/ folder found in that folder.", true); return;
+    }
+    S.root=null; S.readOnly=true;
+    S.events=[]; S.storyMarks=[]; S.lifespans=[]; S.peek=new Map(); S.eras=new Map();
+    for(const f of files){
+      const r=rel(f); if(!/\.md$/i.test(r)) continue;
+      const base=r.split("/").pop();
+      if(base.startsWith("_")) continue;
+      const text=await f.text();
+      if(/^events\//i.test(r)) S.events.push(ingestEvent(base,text));
+      else if(/^stories\//i.test(r)){ const m=ingestStoryMark(base,text); if(m) S.storyMarks.push(m); ingestPeek(base,text,"story"); }
+      else if(/^characters\//i.test(r)){ const l=ingestLifespan(base,text); if(l) S.lifespans.push(l); ingestPeek(base,text,"character"); }
+      else if(/^world\/locations\//i.test(r)) ingestPeek(base,text,"location");
+      else if(/^world\/factions\//i.test(r)) ingestPeek(base,text,"faction");
+      else if(/^world\/calendar\.md$/i.test(r)) S.eras=parseCalendar(text);
+    }
+    setFolderUI("on","read-only");
+    render();
+    toast("Loaded read-only - this mode can't reconnect automatically next time.");
+  };
+  inp.click();
+}
+
+/* ---------- loading everything ---------- */
+async function loadAll(){
+  S.events=[]; S.storyMarks=[]; S.lifespans=[]; S.eras=new Map(); S.peek=new Map();
+  await readEvents();
+  await readStories();
+  await readCharacters();
+  await readLocations();
+  await readFactions();
+  await readCalendar();
+  render();
+}
+async function readEvents(){
+  try{
+    const dir=await S.root.getDirectoryHandle("Events");
+    for await (const [name,handle] of dir.entries()){
+      if(handle.kind!=="file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+      S.events.push(ingestEvent(name, await (await handle.getFile()).text()));
+    }
+  }catch(e){}
+}
+async function readStories(){
+  try{
+    const dir=await S.root.getDirectoryHandle("Stories");
+    for await (const [name,handle] of dir.entries()){
+      if(handle.kind!=="file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+      const text=await (await handle.getFile()).text();
+      const mark=ingestStoryMark(name,text);
+      if(mark) S.storyMarks.push(mark);
+      ingestPeek(name,text,"story");
+    }
+  }catch(e){}
+}
+async function readCharacters(){
+  try{
+    const dir=await S.root.getDirectoryHandle("Characters");
+    for await (const [name,handle] of dir.entries()){
+      if(handle.kind!=="file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+      const text=await (await handle.getFile()).text();
+      const life=ingestLifespan(name,text);
+      if(life) S.lifespans.push(life);
+      ingestPeek(name,text,"character");
+    }
+  }catch(e){}
+}
+async function readLocations(){
+  try{
+    const world=await S.root.getDirectoryHandle("World");
+    const dir=await world.getDirectoryHandle("Locations");
+    for await (const [name,handle] of dir.entries()){
+      if(handle.kind!=="file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+      ingestPeek(name, await (await handle.getFile()).text(), "location");
+    }
+  }catch(e){}
+}
+async function readFactions(){
+  try{
+    const world=await S.root.getDirectoryHandle("World");
+    const dir=await world.getDirectoryHandle("Factions");
+    for await (const [name,handle] of dir.entries()){
+      if(handle.kind!=="file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+      ingestPeek(name, await (await handle.getFile()).text(), "faction");
+    }
+  }catch(e){}
+}
+async function readCalendar(){
+  try{
+    const world=await S.root.getDirectoryHandle("World");
+    const fh=await world.getFileHandle("Calendar.md");
+    S.eras=parseCalendar(await (await fh.getFile()).text());
+  }catch(e){ S.eras=new Map(); }
+}
+
+/* ---------- grouping + sorting ---------- */
+function chronoCompare(a,b){
+  if(a.hint!=null && b.hint!=null) return a.hint-b.hint;
+  if(a.hint!=null) return -1;
+  if(b.hint!=null) return 1;
+  return a.name.localeCompare(b.name);
+}
+function eraGroups(){
+  const by=new Map();
+  S.events.forEach(e=>{
+    const k=e.era?keyOf(e.era):"";
+    if(!by.has(k)) by.set(k,{key:k, name:e.era||"", items:[]});
+    by.get(k).items.push(e);
+  });
+  const groups=[...by.values()];
+  groups.forEach(g=>g.items.sort(chronoCompare));
+  groups.sort((a,b)=>{
+    if(a.key==="") return 1;
+    if(b.key==="") return -1;
+    const ra=S.eras.get(a.key), rb=S.eras.get(b.key);
+    const oa=ra&&ra.order!=null?ra.order:Infinity;
+    const ob=rb&&rb.order!=null?rb.order:Infinity;
+    if(oa!==ob) return oa-ob;
+    return a.name.localeCompare(b.name);
+  });
+  return groups;
+}
+
+/* ---------- peek popover ---------- */
+function closePeek(){ const p=$("peekPop"); if(p) p.remove(); }
+function openPeek(name, x, y){
+  closePeek();
+  const rec=S.peek.get(keyOf(name));
+  const KIND={character:"Character",location:"Location",faction:"Faction",story:"Story"};
+  const pop=document.createElement("div");
+  pop.className="pop"; pop.id="peekPop";
+  if(rec){
+    const type={character:"character",location:"location",faction:"faction",story:"story"}[rec.kind];
+    pop.innerHTML=
+      '<button class="close" id="peekClose">&times;</button>'+
+      '<div class="kind">'+esc(KIND[rec.kind]||"")+(rec.status?" · "+esc(rec.status):"")+'</div>'+
+      '<h5>'+esc(rec.name)+'</h5>'+
+      (rec.tagline?'<p class="tl">'+esc(rec.tagline)+'</p>':'')+
+      (rec.summary?'<p class="bd">'+esc(rec.summary)+'</p>':'')+
+      '<div class="foot"><a href="character-writer.html#type='+type+'&mode=form&open='+encodeURIComponent(rec.fileName)+'" target="_blank" rel="noopener">Open in writer →</a></div>';
+  } else {
+    pop.innerHTML=
+      '<button class="close" id="peekClose">&times;</button>'+
+      '<div class="kind miss">Not written yet</div>'+
+      '<h5>'+esc(name)+'</h5>'+
+      '<p class="miss">No file matches this name.</p>';
+  }
+  document.body.appendChild(pop);
+  const pad=12, w=290;
+  pop.style.left=Math.max(pad, Math.min(x+10, window.innerWidth-w-pad))+"px";
+  pop.style.top=Math.max(pad, Math.min(y+10, window.innerHeight-160-pad))+"px";
+  $("peekClose").onclick=closePeek;
+}
+document.addEventListener("click", e=>{
+  const p=$("peekPop");
+  if(!p || p.contains(e.target) || e.target.closest(".chip")) return;
+  closePeek();
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closePeek(); });
+
+/* ---------- rendering ---------- */
+function chipsFor(names){
+  if(!names.length) return "";
+  return '<div class="chips">'+names.map(n=>
+    '<span class="chip" data-name="'+esc(n)+'">'+esc(n)+'</span>'
+  ).join("")+'</div>';
+}
+function wireChips(el){
+  el.querySelectorAll(".chip[data-name]").forEach(c=>{
+    c.onclick=e=>{ e.stopPropagation(); openPeek(c.dataset.name, e.clientX, e.clientY); };
+  });
+}
+function eventCard(it, writerType){
+  const div=document.createElement("div");
+  div.className="card";
+  const isAlt = it.universe==="alternate universe";
+  div.innerHTML=
+    '<div class="when">'+(it.date?'<b>Date</b>'+esc(it.date):'<span style="font-style:italic">no date given</span>')+'</div>'+
+    '<div class="main">'+
+      '<h3><a href="character-writer.html#type='+writerType+'&mode=form&open='+encodeURIComponent(it.fileName)+'" target="_blank" rel="noopener">'+esc(it.name)+'</a></h3>'+
+      (isAlt?'<span class="au-badge">alternate universe</span>':'')+
+      (it.status?'<span class="status">'+esc(it.status)+'</span>':'')+
+      (it.tagline?'<p class="tagline">'+esc(it.tagline)+'</p>':'')+
+      (it.branchFrom?'<p class="branch">⑂ Branches from <span class="chip" data-name="'+esc(it.branchFrom)+'">'+esc(it.branchFrom)+'</span>'+(it.branchPoint?' at '+esc(it.branchPoint):'')+'</p>':'')+
+      (it.what?'<p class="what">'+esc(it.what)+'</p>':'')+
+      chipsFor(it.involves)+
+    '</div>';
+  wireChips(div);
+  return div;
+}
+function renderGroup(g){
+  const wrap=document.createElement("section");
+  wrap.className="eraGroup"+(g.key===""?" undated":"");
+  if(g.key!==""){
+    const st=eraStyle(g.name);
+    wrap.style.setProperty("--era-accent", st.accent);
+    wrap.style.setProperty("--era-line", st.line);
+  }
+  const h=document.createElement("h2");
+  h.className="eraHead";
+  h.innerHTML=(g.key===""?"No era set":esc(g.name))+' <span class="n">'+g.items.length+'</span>';
+  wrap.appendChild(h);
+  const cards=document.createElement("div");
+  cards.className="cards";
+  g.items.forEach(it=>cards.appendChild(eventCard(it,"event")));
+  wrap.appendChild(cards);
+  return wrap;
+}
+function renderAuxSection(title, items, writerType, empty){
+  const wrap=document.createElement("section");
+  wrap.className="eraGroup aux";
+  const h=document.createElement("h2");
+  h.className="eraHead";
+  h.innerHTML=esc(title)+' <span class="n">'+items.length+'</span>';
+  wrap.appendChild(h);
+  if(!items.length){
+    const p=document.createElement("p"); p.className="empty"; p.textContent=empty;
+    wrap.appendChild(p);
+    return wrap;
+  }
+  const cards=document.createElement("div");
+  cards.className="cards";
+  [...items].sort(chronoCompare).forEach(it=>cards.appendChild(eventCard(it,writerType)));
+  wrap.appendChild(cards);
+  return wrap;
+}
+function renderLifespans(){
+  const wrap=document.createElement("section");
+  wrap.className="eraGroup aux";
+  const h=document.createElement("h2");
+  h.className="eraHead";
+  h.innerHTML="Lifespans <span class=\"n\">"+S.lifespans.length+"</span>";
+  wrap.appendChild(h);
+  if(!S.lifespans.length){
+    const p=document.createElement("p"); p.className="empty";
+    p.textContent="No character has born: or died: set yet.";
+    wrap.appendChild(p);
+    return wrap;
+  }
+  const list=document.createElement("div");
+  [...S.lifespans].sort(chronoCompare).forEach(l=>{
+    const row=document.createElement("div");
+    row.className="lifeRow";
+    row.innerHTML=
+      '<a href="character-writer.html#type=character&mode=form&open='+encodeURIComponent(l.fileName)+'" target="_blank" rel="noopener">'+esc(l.name)+'</a>'+
+      '<span class="span">'+esc(l.born||"?")+' - '+esc(l.died||"present")+'</span>';
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+  return wrap;
+}
+function renderLegend(groups){
+  const bar=$("eraLegend");
+  bar.innerHTML="";
+  groups.filter(g=>g.key!=="").forEach(g=>{
+    const st=eraStyle(g.name);
+    const chip=document.createElement("button");
+    chip.type="button";
+    chip.className="eraChip"+(S.hiddenEras.has(g.key)?" off":"");
+    chip.innerHTML='<span class="sw" style="background:'+st.accent+'"></span>'+esc(g.name);
+    chip.onclick=()=>{
+      if(S.hiddenEras.has(g.key)) S.hiddenEras.delete(g.key); else S.hiddenEras.add(g.key);
+      render();
+    };
+    bar.appendChild(chip);
+  });
+}
+function render(){
+  const groups=eraGroups();
+  const hasAnything = S.events.length || S.storyMarks.length || S.lifespans.length;
+
+  $("blank").hidden = !!hasAnything;
+  $("body").hidden = !hasAnything;
+  $("blankNewEvent").style.display = S.root ? "inline-flex" : "none";
+  if(!hasAnything) return;
+
+  renderLegend(groups);
+
+  const track=$("track");
+  track.innerHTML="";
+  groups.forEach(g=>{
+    if(g.key==="" && !S.showUndated) return;
+    if(g.key!=="" && S.hiddenEras.has(g.key)) return;
+    if(!g.items.length) return;
+    track.appendChild(renderGroup(g));
+  });
+  if(S.showStories) track.appendChild(renderAuxSection("Story placements", S.storyMarks, "story", "No story has timeline_position: set yet."));
+  if(S.showLife) track.appendChild(renderLifespans());
+
+  if(!track.children.length){
+    const p=document.createElement("p");
+    p.className="empty";
+    p.textContent="Everything's hidden by the filters above.";
+    track.appendChild(p);
+  }
+}
+
+/* ---------- toast ---------- */
+function toast(msg, isErr){
+  const t=$("toast");
+  t.textContent=msg;
+  t.className="show"+(isErr?" bad":"");
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>{ t.className=""; }, isErr?5000:2600);
+}
+
+/* ---------- theme ---------- */
+const SYSTEM_LIGHT=window.matchMedia("(prefers-color-scheme: light)");
+const THEME_ICON={system:"◐",dark:"☾",light:"☀"};
+const THEME_TITLE={system:"Theme: follows your system",dark:"Theme: dark",light:"Theme: light"};
+function themePref(){
+  try{ const v=localStorage.getItem("cdb-theme"); return (v==="light"||v==="dark")?v:"system"; }
+  catch(e){ return "system"; }
+}
+function applyTheme(pref){
+  const dark = pref==="system" ? !SYSTEM_LIGHT.matches : pref==="dark";
+  document.documentElement.dataset.theme = dark?"dark":"light";
+  $("btnTheme").textContent=THEME_ICON[pref];
+  $("btnTheme").title=THEME_TITLE[pref]+" - click to change";
+  render();
+}
+$("btnTheme").onclick=()=>{
+  /* Flip to the opposite of what's actually on screen. The old
+     system -> dark -> light cycle spent a click doing nothing visible: on a
+     machine whose OS is dark, "follow system" and "dark" render identically,
+     so reaching light took two clicks while returning took one. Following the
+     system is still selectable from the dashboard's settings, which lists all
+     three explicitly. */
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{ if(next==="system") localStorage.removeItem("cdb-theme"); else localStorage.setItem("cdb-theme",next); }catch(e){}
+  applyTheme(next);
+};
+SYSTEM_LIGHT.addEventListener("change", ()=>{ if(themePref()==="system") applyTheme("system"); });
+window.addEventListener("storage", e=>{
+  if(e.key===null || e.key==="cdb-look"){
+    let look=null;
+    try{ look=localStorage.getItem("cdb-look"); }catch(err){}
+    document.documentElement.dataset.look=(["atlas","board","iris","rose","slate"].indexOf(look) >= 0) ? look : "field";
+    render();
+  }
+  if(e.key===null || e.key==="cdb-theme") applyTheme(themePref());
+});
+applyTheme(themePref());
+
+/* ---------- wiring ---------- */
+$("btnConnect").onclick=connectFolder;
+$("btnReload").onclick=()=>{ if(S.root) loadAll(); else toast("Connect a folder first.", true); };
+$("btnHelp").onclick=()=>helpDlg.showModal();
+$("chkUndated").onchange=e=>{ S.showUndated=e.target.checked; render(); };
+$("chkStories").onchange=e=>{ S.showStories=e.target.checked; render(); };
+$("chkLife").onchange=e=>{ S.showLife=e.target.checked; render(); };
+
+if(!FS_OK){ $("fsDot").className="dot warn"; $("fsLabel").textContent="read-only mode"; }
+else restoreFolder();
+
+/* ============================================================
+   TOOL NAV DRAWER
+   ============================================================
+   The three-line button in the header opens a list of every tool. Pure
+   navigation: it stores nothing and reads nothing from the database folder,
+   so it works before a folder is ever connected.
+
+   NAV_TOOLS is repeated in each tool on purpose - these pages are standalone
+   by design, with no build step and no shared runtime. Adding a tool later is
+   one line here, in each file.
+   ============================================================ */
+const NAV_TOOLS = [
+  {g:"⌂", label:"Home",        href:"index.html"},
+  {g:"✎", label:"Writer",      href:"character-writer.html"},
+  {g:"▤", label:"Library",     href:"library.html"},
+  {g:"⁂", label:"Family tree", href:"family-tree.html"},
+  {g:"◎", label:"World map",   href:"world-map.html"},
+  {g:"¶", label:"Manuscript",  href:"manuscript.html"},
+  {g:"▣", label:"Art board",   href:"art-board.html"},
+  {g:"⌕", label:"Search",      href:"search.html"},
+  {g:"◷", label:"Timeline",    href:"timeline.html"}
+];
+const NAV_HERE = "timeline.html";
+/* This page lives in Tools/; the dashboard is one level up. NAV_TOOLS
+   entries keep the bare filename as their stable id (the saved order is
+   keyed on it), and these two turn an id into a link from here. */
+const NAV_BASE = "";
+const NAV_HOME = "../index.html";
+
+(function(){
+  const btn = document.getElementById("btnNav");
+  if(!btn) return;
+
+  const scrim = document.createElement("div");
+  scrim.id = "navScrim";
+
+  const drawer = document.createElement("nav");
+  drawer.id = "navDrawer";
+  drawer.setAttribute("aria-label", "Tools");
+
+  const h = document.createElement("h2");
+  h.textContent = "Tools";
+  drawer.appendChild(h);
+
+  /* The list order is yours - drag a row to move it. The order rides one
+     shared localStorage key so every tool shows the same list (pure UI
+     convenience, no world data - GROUND-RULES rule 1). A tool missing from
+     the saved order - a future new one - keeps its default place. */
+  const NAV_ORDER_KEY = "cdb-navorder";
+  function navOrder(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY) || "null"); }catch(e){}
+    if(!Array.isArray(saved)) return NAV_TOOLS.slice();
+    const byHref = new Map(NAV_TOOLS.map(t=>[t.href, t]));
+    const out = [];
+    saved.forEach(href=>{ const t = byHref.get(href); if(t){ out.push(t); byHref.delete(href); } });
+    NAV_TOOLS.forEach(t=>{ if(byHref.has(t.href)) out.push(t); });
+    return out;
+  }
+  function saveOrder(list){
+    try{ localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(list.map(t=>t.href))); }catch(e){}
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "navfoot";
+  foot.textContent = "Drag a row to reorder - every tool follows. They all read the same folder: connect it once and they remember it.";
+
+  let dragHref = null;
+  function renderNav(){
+    [...drawer.querySelectorAll("a, span.navhere")].forEach(el=>el.remove());
+    navOrder().forEach(t=>{
+      const here = t.href === NAV_HERE;
+      const el = document.createElement(here ? "span" : "a");
+      if(here){ el.className = "navhere"; el.setAttribute("aria-current","page"); }
+      else { el.href = t.href === "index.html" ? NAV_HOME : NAV_BASE + t.href; }
+      const g = document.createElement("span"); g.className = "g"; g.textContent = t.g;
+      const s = document.createElement("span"); s.textContent = t.label;
+      el.append(g, s);
+      el.draggable = true;
+      el.title = "Drag to reorder";
+      el.addEventListener("dragstart", e=>{
+        dragHref = t.href;
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", t.href); }catch(err){}
+      });
+      el.addEventListener("dragover", e=>{ if(dragHref && dragHref !== t.href) e.preventDefault(); });
+      el.addEventListener("drop", e=>{
+        e.preventDefault();
+        if(!dragHref || dragHref === t.href) return;
+        const cur = navOrder();
+        const from = cur.findIndex(x=>x.href === dragHref);
+        const to = cur.findIndex(x=>x.href === t.href);
+        if(from < 0 || to < 0) return;
+        const moved = cur.splice(from, 1)[0];
+        cur.splice(to, 0, moved);
+        saveOrder(cur);
+        dragHref = null;
+        renderNav();
+      });
+      el.addEventListener("dragend", ()=>{ dragHref = null; });
+      drawer.insertBefore(el, foot);
+    });
+  }
+
+  drawer.appendChild(foot);
+  renderNav();
+  /* a reorder made in another open tab shows up here too */
+  window.addEventListener("storage", e=>{
+    if(e.key === null || e.key === NAV_ORDER_KEY) renderNav();
+  });
+
+  document.body.append(scrim, drawer);
+
+  let open = false;
+  function setNav(next){
+    open = next;
+    scrim.classList.toggle("open", open);
+    drawer.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if(open){
+      const first = drawer.querySelector("a");
+      if(first) first.focus();
+    } else {
+      btn.focus();
+    }
+  }
+
+  btn.setAttribute("aria-expanded","false");
+  btn.onclick = e => { e.stopPropagation(); setNav(!open); };
+  scrim.onclick = () => setNav(false);
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape" && open){ e.stopPropagation(); setNav(false); }
+  }, true);
+})();
+</script>
+
+<!-- cloud storage: makes Supabase look like the folder these tools expect -->
+<script src="/world-codex/config.js"></script>
+<script src="/world-codex/cloud-fs.js"></script>
+</body>
+</html>

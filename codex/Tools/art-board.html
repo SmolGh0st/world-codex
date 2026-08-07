@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art Board - Character Database</title>
+<script>
+/* Theme, applied before first paint so there's no flash of the wrong one.
+   The choice is remembered in localStorage - pure UI convenience, no world
+   data, which is what GROUND-RULES rule 1 allows. The other tools read the
+   same key, so the whole suite follows one setting. */
+(function(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cdb-theme"); }catch(e){}
+  if(pref !== "light" && pref !== "dark") pref = null;   // null = follow system
+  var dark = pref ? pref==="dark"
+                  : !window.matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  /* the look (colour family) rides a second shared key; field is the default */
+  var look = null;
+  try{ look = localStorage.getItem("cdb-look"); }catch(e){}
+  if(["atlas","board","iris","rose","slate"].indexOf(look) < 0) look = "field";
+  document.documentElement.dataset.look = look;
+})();
+</script>
+<style>
+  :root{
+    --bg:#14120f;
+    --panel:#1c1a16;
+    --panel-2:#232019;
+    --line:#332e25;
+    --line-soft:#28241d;
+    --ink:#ece4d6;
+    --ink-dim:#a99e8b;
+    --ink-faint:#6f665a;
+    --accent:#c9a227;
+    --accent-soft:#3a3018;
+    --accent-line:#4a3d1d;
+    --accent-hover:#dcb433;
+    --on-accent:#1a1508;
+    --btn-hover:#2a251b;
+    --danger:#c96a4a;
+    --danger-ink:#f0b4a0;
+    --ok:#7fa860;
+    --shadow:rgba(0,0,0,.45);
+    --radius:10px;
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f3ea;
+    --panel:#fffdf8;
+    --panel-2:#efe9dc;
+    --line:#dbd1bd;
+    --line-soft:#e9e1d1;
+    --ink:#2a251c;
+    --ink-dim:#5d5548;
+    --ink-faint:#877d6d;
+    --accent:#8a6d10;
+    --accent-soft:#f2e7c2;
+    --accent-line:#d8c68a;
+    --accent-hover:#a1811d;
+    --on-accent:#fffdf6;
+    --btn-hover:#e7dfcf;
+    --danger:#a8431f;
+    --danger-ink:#8c3316;
+    --ok:#4e7233;
+    --shadow:rgba(60,50,30,.18);
+    color-scheme:light;
+  }
+
+  /* ---------- looks ------------------------------------------------------ */
+  :root[data-look="atlas"]{
+    --bg:#111814; --panel:#19231d; --panel-2:#212d26;
+    --line:#35453b; --line-soft:#273229;
+    --ink:#e2dec9; --ink-dim:#a39d87; --ink-faint:#6e796e;
+    --accent:#4fb896; --accent-soft:#163529; --accent-line:#2b5546;
+    --accent-hover:#65cbaa; --on-accent:#062318; --btn-hover:#243128;
+  }
+  :root[data-look="atlas"][data-theme="light"]{
+    --bg:#e7e7d8; --panel:#f4f4e8; --panel-2:#dfdfca;
+    --line:#c2c2a6; --line-soft:#d6d6c0;
+    --ink:#35322a; --ink-dim:#5e5947; --ink-faint:#83816b;
+    --accent:#1d6b58; --accent-soft:#d7eae1; --accent-line:#a6ccbd;
+    --accent-hover:#27816a; --on-accent:#f5fbf8; --btn-hover:#e5e5d2;
+    --shadow:rgba(55,65,50,.18);
+  }
+  :root[data-look="board"]{
+    --bg:#171310; --panel:#201a15; --panel-2:#2a2219;
+    --line:#3a2f24; --line-soft:#2b231c;
+    --ink:#e6dcc6; --ink-dim:#a69c85; --ink-faint:#786b57;
+    --accent:#b58f4a; --accent-soft:#372a15; --accent-line:#584421;
+    --accent-hover:#c8a35e; --on-accent:#251803; --btn-hover:#2f261d;
+  }
+  :root[data-look="board"][data-theme="light"]{
+    --bg:#e8dcc5; --panel:#f2e7d1; --panel-2:#dfd0b3;
+    --line:#c5af85; --line-soft:#d7c7a6;
+    --ink:#2e2822; --ink-dim:#5d5343; --ink-faint:#7c6e54;
+    --accent:#6e5624; --accent-soft:#ecdfbc; --accent-line:#cab383;
+    --accent-hover:#83682a; --on-accent:#fdf9ee; --btn-hover:#e7dabe;
+    --shadow:rgba(70,55,30,.18);
+  }
+  :root[data-look="iris"]{
+    --bg:#151218; --panel:#1d1924; --panel-2:#262030;
+    --line:#383046; --line-soft:#2b2537;
+    --ink:#e8e2f0; --ink-dim:#a79fb6; --ink-faint:#6f6880;
+    --accent:#a78bdb; --accent-soft:#2c2344; --accent-line:#473a66;
+    --accent-hover:#baa2e8; --on-accent:#170f26; --btn-hover:#2a2438;
+  }
+  :root[data-look="iris"][data-theme="light"]{
+    --bg:#f2eef7; --panel:#fcfaff; --panel-2:#e7e0f0;
+    --line:#cfc3e0; --line-soft:#ded4ea;
+    --ink:#2b2438; --ink-dim:#5a5168; --ink-faint:#837a92;
+    --accent:#6b4fa8; --accent-soft:#e6dcf5; --accent-line:#c3aee3;
+    --accent-hover:#7d61bd; --on-accent:#f9f6ff; --btn-hover:#e3dbef;
+    --shadow:rgba(60,50,80,.18);
+  }
+  :root[data-look="rose"]{
+    --bg:#191214; --panel:#221a1d; --panel-2:#2c2226;
+    --line:#443037; --line-soft:#332529;
+    --ink:#eee0e4; --ink-dim:#b39ba3; --ink-faint:#7d6970;
+    --accent:#d4899b; --accent-soft:#3d222b; --accent-line:#5e3644;
+    --accent-hover:#e29fb0; --on-accent:#260f16; --btn-hover:#2f2529;
+  }
+  :root[data-look="rose"][data-theme="light"]{
+    --bg:#f7eef0; --panel:#fffafb; --panel-2:#f0e1e5;
+    --line:#ddc3ca; --line-soft:#ead5da;
+    --ink:#35262b; --ink-dim:#645057; --ink-faint:#8f7a81;
+    --accent:#a04360; --accent-soft:#f4dbe3; --accent-line:#dfadbd;
+    --accent-hover:#b55573; --on-accent:#fff7f9; --btn-hover:#eddde1;
+    --shadow:rgba(80,50,60,.18);
+  }
+  :root[data-look="slate"]{
+    --bg:#10141a; --panel:#171d26; --panel-2:#1f2733;
+    --line:#303c4d; --line-soft:#26303e;
+    --ink:#dde4ee; --ink-dim:#94a1b4; --ink-faint:#627082;
+    --accent:#6da7d8; --accent-soft:#16293c; --accent-line:#2a4a68;
+    --accent-hover:#85b9e4; --on-accent:#06131f; --btn-hover:#232d3a;
+  }
+  :root[data-look="slate"][data-theme="light"]{
+    --bg:#e9edf2; --panel:#f7f9fc; --panel-2:#dde4ec;
+    --line:#bcc8d6; --line-soft:#d2dae4;
+    --ink:#27303b; --ink-dim:#4f5b6a; --ink-faint:#77828f;
+    --accent:#2c6394; --accent-soft:#d9e7f3; --accent-line:#a5c4dd;
+    --accent-hover:#3a76ab; --on-accent:#f6fafd; --btn-hover:#dbe2ea;
+    --shadow:rgba(45,60,80,.18);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);min-height:100vh;
+    font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;font-size:12.5px}
+
+  header{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:var(--panel);position:sticky;top:0;z-index:20;
+  }
+  a.brand{display:block;color:var(--ink)}
+  a.brand:hover{text-decoration:none;color:var(--accent)}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-faint);letter-spacing:.4px;text-transform:uppercase}
+  .brand{font-weight:650;letter-spacing:.2px}
+  .grow{flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);display:inline-block}
+  .dot.on{background:var(--ok)}
+  .dot.warn{background:var(--accent)}
+
+  button{font:inherit;color:inherit}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer;transition:.13s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent);background:var(--btn-hover)}
+
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:transparent;border:0;padding:7px 14px;cursor:pointer;color:var(--ink-dim);font-size:13.5px}
+  .seg button:hover{background:var(--btn-hover);color:var(--ink)}
+  .seg button.on{background:var(--accent-soft);color:var(--ink)}
+
+  .tag{
+    font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;font-weight:600;
+    border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--ink-faint);
+  }
+  .tag.ready{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
+
+  main{max-width:1080px;margin:0 auto;padding:34px 26px 90px}
+  .hero{margin:0 0 26px}
+  .hero h1{margin:0 0 6px;font-size:30px;letter-spacing:.2px;font-weight:600}
+  .hero p{margin:0;color:var(--ink-dim);max-width:66ch}
+
+  .filterbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+  .filterbar input[type=search]{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 11px;border-radius:8px;font:inherit;flex:1;min-width:180px;
+  }
+  .filterbar input[type=search]:focus{outline:none;border-color:var(--accent)}
+
+  .empty{color:var(--ink-faint);font-size:13.5px;text-align:center;padding:50px 0}
+
+  /* ---------- character entries ------------------------------------------ */
+  .entry{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px 20px;margin-bottom:16px;
+  }
+  .entry-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:13px}
+  .entry-portrait{
+    width:64px;height:64px;border-radius:10px;flex:none;overflow:hidden;
+    background:var(--accent-soft);border:1px solid var(--accent-line);
+    color:var(--accent);font-weight:600;font-size:24px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .entry-portrait img{width:100%;height:100%;object-fit:cover;display:block}
+  .entry-id{flex:1;min-width:220px}
+  .entry-id h3{margin:0 0 2px;font-size:18px;font-weight:600}
+  .entry-id .meta{font-size:12.5px;color:var(--ink-faint)}
+  .entry-id .tagline{margin:6px 0 0;font-size:13px;font-style:italic;color:var(--ink-dim)}
+  .entry-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
+  .entry-link{font-size:12.5px;white-space:nowrap}
+
+  .appearance{
+    font-size:13.5px;line-height:1.6;color:var(--ink-dim);
+    background:var(--panel-2);border:1px solid var(--line-soft);border-radius:8px;
+    padding:10px 13px;margin:0 0 14px;
+  }
+  .appearance b{color:var(--ink);font-weight:600}
+
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .thumb{
+    position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:zoom-in;
+    border:1px solid var(--line);background:var(--panel-2);
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:.15s}
+  .thumb:hover img{transform:scale(1.06)}
+  .thumb .pill{
+    position:absolute;top:6px;left:6px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+    background:var(--accent);color:var(--on-accent);border-radius:999px;padding:2px 7px;font-weight:600;
+  }
+  .no-art{
+    border:1px dashed var(--line);border-radius:8px;padding:16px;text-align:center;
+    color:var(--ink-faint);font-size:13px;line-height:1.5;
+  }
+  .hint{font-size:12.5px;color:var(--ink-faint);margin:0 0 4px}
+
+  /* ---------- categories --------------------------------------------------
+     A category is just a subfolder of art_folder (reference/sketch/outfit/
+     final); loose files directly in art_folder are "Uncategorized". Each
+     section is its own drop target. */
+  .categories{display:flex;flex-direction:column;gap:12px}
+  .cat{border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;transition:.13s}
+  .cat.drag{border-color:var(--accent);background:var(--accent-soft)}
+  .cat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .cat-label{font-size:11px;letter-spacing:.7px;text-transform:uppercase;font-weight:600;color:var(--ink-faint)}
+  .cat-count{font-size:11px;color:var(--ink-faint)}
+  .cat-add{
+    margin-left:auto;width:21px;height:21px;border-radius:6px;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-faint);
+    font-size:14px;line-height:1;
+  }
+  .cat-add:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .cat-empty{
+    border:1px dashed var(--line);border-radius:8px;padding:13px;text-align:center;
+    color:var(--ink-faint);font-size:12px;
+  }
+
+  /* ---------- lightbox ---------------------------------------------------- */
+  #lightbox{
+    position:fixed;inset:0;background:rgba(0,0,0,.86);display:none;
+    align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:12px;
+  }
+  #lightbox.show{display:flex}
+  #lightbox img{max-width:88vw;max-height:78vh;object-fit:contain;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #lightbox .cap{color:#eee;font-size:13.5px}
+  #lightbox .nav{
+    position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);
+    border:0;color:#fff;font-size:26px;padding:10px 14px;border-radius:8px;cursor:pointer;
+  }
+  #lightbox .nav:hover{background:rgba(255,255,255,.18)}
+  #lightbox .prev{left:22px}
+  #lightbox .next{right:22px}
+  #lightbox .close{position:absolute;top:18px;right:22px;background:transparent;border:0;color:#fff;font-size:22px;cursor:pointer}
+
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 15px;font-size:13.5px;opacity:0;pointer-events:none;transition:.18s;max-width:min(520px,88vw);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%)}
+  #toast.bad{border-color:var(--danger);color:var(--danger-ink)}
+
+  /* ---------- tool nav drawer ---------------------------------------------
+     The three-line button at the far left of every header opens the same
+     list of every tool, so you can move between them without going via the
+     home page. Identical markup, CSS and behaviour in all of them; the tool
+     you're already in is marked and not a link.
+
+     The list is duplicated per file rather than shared, because these pages
+     are deliberately standalone - no build step, no common runtime. Adding a
+     tool later means one line in each NAV_TOOLS array. */
+  .navbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:32px;flex:none;border-radius:8px;cursor:pointer;
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:0;transition:.13s;
+  }
+  .navbtn span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:1px}
+  .navbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--btn-hover)}
+  .navbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #navScrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .16s;
+  }
+  #navScrim.open{opacity:1;pointer-events:auto}
+  #navDrawer{
+    position:fixed;top:0;left:0;bottom:0;width:248px;z-index:301;
+    background:var(--panel);border-right:1px solid var(--line);
+    box-shadow:0 0 40px var(--shadow);
+    transform:translateX(-101%);transition:transform .18s ease;
+    display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;
+  }
+  #navDrawer.open{transform:none}
+  #navDrawer h2{
+    margin:2px 8px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  #navDrawer a,#navDrawer span.navhere{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+    color:var(--ink);font-size:14px;text-decoration:none;
+  }
+  #navDrawer a:hover{background:var(--btn-hover);text-decoration:none;color:var(--ink)}
+  #navDrawer a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  #navDrawer span.navhere{background:var(--accent-soft);font-weight:600}
+  #navDrawer .g{width:20px;text-align:center;color:var(--accent);font-size:15px;flex:none}
+  #navDrawer .navfoot{
+    margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line-soft);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5;
+  }
+  @media (prefers-reduced-motion:reduce){
+    #navDrawer,#navScrim{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="navbtn" id="btnNav" title="All tools" aria-label="All tools"><span></span><span></span><span></span></button>
+  <a class="brand" href="index.html">Art Board<small>character database</small></a>
+  <button class="btn" id="btnConnect"><span class="dot" id="fsDot"></span><span id="fsLabel">connect folder</span></button>
+  <div class="grow"></div>
+  <button class="btn" id="btnTheme" title="Light / dark" aria-label="Light or dark">☾</button>
+</header>
+
+<main>
+  <div class="hero">
+    <h1 class="serif">Art Board</h1>
+    <p>Every character's reference art in one place, read straight from
+       <code>art_folder</code> and <code>main_ref</code> - nothing lives here
+       that isn't already in the files. Sectioned into Reference, Sketch,
+       Outfit and Final (plain subfolders, nothing special) - drag images
+       onto a section to drop them straight in. Characters with no art yet
+       show their <code>## Appearance</code> write-up instead, since that's
+       what there is to work from until something gets drawn.</p>
+  </div>
+
+  <div class="filterbar">
+    <input type="search" id="q" placeholder="Filter by name or tag…">
+    <div class="seg" id="artSeg">
+      <button data-art="all" class="on">All</button>
+      <button data-art="has">Has art</button>
+      <button data-art="needs">Needs art</button>
+    </div>
+  </div>
+
+  <div id="empty" class="empty">Connect your Character Database folder above to see the board.</div>
+  <div id="board"></div>
+</main>
+
+<div id="lightbox">
+  <button class="close" id="lbClose" aria-label="Close">✕</button>
+  <button class="nav prev" id="lbPrev" aria-label="Previous image">‹</button>
+  <img id="lbImg" alt="">
+  <button class="nav next" id="lbNext" aria-label="Next image">›</button>
+  <div class="cap" id="lbCap"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONSTANTS / STATE
+   ============================================================ */
+const IMG_RE = /\.(png|jpe?g|gif|webp|avif)$/i;
+const FS_OK = typeof window.showDirectoryPicker === "function";
+const $ = id => document.getElementById(id);
+
+/* A category is nothing but a subfolder of art_folder - no sidecar file, no
+   tool-side database, so GROUND-RULES rule 1 still holds. These four are
+   just the ones offered as drop targets; any other subfolder that already
+   exists on disk shows up too (schema drift is fine, same as everywhere
+   else in this project). Loose files directly in art_folder have no
+   category folder at all - shown as "Uncategorized". */
+const DEFAULT_CATEGORIES = [
+  {key:"reference", label:"Reference"},
+  {key:"sketch",     label:"Sketch"},
+  {key:"outfit",     label:"Outfit"},
+  {key:"final",      label:"Final"}
+];
+
+function categoryLabel(key){
+  if(!key) return "Uncategorized";
+  const known = DEFAULT_CATEGORIES.find(c=>c.key === key.toLowerCase());
+  if(known) return known.label;
+  return key.replace(/[-_]+/g," ").replace(/\b\w/g, c=>c.toUpperCase());
+}
+
+const S = {
+  root:null, saved:null,     // directory-handle mode
+  imageFiles:null,           // fallback mode: lowercase relpath -> File
+  entries:[],
+  query:"", artFilter:"all",
+  lb:null                    // {e, i} while the lightbox is open
+};
+
+/* ---- remembering the folder --------------------------------------------
+   A folder handle can't be turned into a string, so localStorage is no use -
+   it goes in IndexedDB instead. What's stored is a *pointer to* the folder,
+   never anything from inside it, so GROUND-RULES rule 1 still holds: delete
+   this and nothing about the world is lost, you just pick the folder again.
+   Every tool in the suite shares this one entry. */
+const FOLDER_DB = "cdb-folder", FOLDER_STORE = "handles", FOLDER_KEY = "root";
+
+function folderTx(mode){
+  return new Promise((res,rej)=>{
+    let rq;
+    try{ rq = indexedDB.open(FOLDER_DB, 1); }catch(e){ rej(e); return; }
+    rq.onupgradeneeded = ()=>rq.result.createObjectStore(FOLDER_STORE);
+    rq.onerror = ()=>rej(rq.error);
+    rq.onsuccess = ()=>{
+      const db = rq.result, tx = db.transaction(FOLDER_STORE, mode);
+      tx.oncomplete = ()=>db.close();
+      res(tx.objectStore(FOLDER_STORE));
+    };
+  });
+}
+
+async function rememberFolder(handle){
+  try{ (await folderTx("readwrite")).put(handle, FOLDER_KEY); }
+  catch(e){}                      // private windows and older browsers say no
+}
+
+async function recallFolder(){
+  try{
+    const store = await folderTx("readonly");
+    return await new Promise(res=>{
+      const q = store.get(FOLDER_KEY);
+      q.onsuccess = ()=>res(q.result || null);
+      q.onerror   = ()=>res(null);
+    });
+  }catch(e){ return null; }
+}
+
+/* ---- connecting ---------------------------------------------------------
+   Unlike index.html this tool can now write - dropped art gets saved into
+   Art/<slug>/<category>/ - so permission is requested as "readwrite", same
+   as the writer and the family tree. */
+
+function setFolderUI(state, name){
+  const dot = $("fsDot"), label = $("fsLabel");
+  if(state === "on"){ dot.className = "dot on"; label.textContent = name; }
+  else if(state === "stale"){ dot.className = "dot warn"; label.textContent = '"'+name+'" - reconnect'; }
+  else { dot.className = "dot"; label.textContent = "connect folder"; }
+}
+
+async function useFolder(handle, quiet){
+  let ok = false;
+  try{ await handle.getDirectoryHandle("Characters"); ok = true; }catch(e){}
+  if(!ok){
+    if(!quiet) toast('No "Characters" folder in "'+handle.name+'". Pick the Character Database folder.', true);
+    return false;
+  }
+  S.root = handle; S.saved = handle; S.imageFiles = null;
+  rememberFolder(handle);
+  setFolderUI("on", handle.name);
+  await scanHandleMode();
+  render();
+  return true;
+}
+
+async function connectFolder(){
+  if(!FS_OK){ pickFallback(); return; }
+
+  // a remembered folder only needs its permission renewed - skip the picker
+  if(S.saved && S.saved !== S.root){
+    try{
+      if(await S.saved.requestPermission({mode:"readwrite"}) === "granted"){
+        if(await useFolder(S.saved)) return;
+      }
+    }catch(e){}
+  }
+
+  try{
+    await useFolder(await window.showDirectoryPicker({mode:"readwrite"}));
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    toast("Couldn't open the folder: " + (e && e.message), true);
+  }
+}
+
+async function restoreFolder(){
+  if(!FS_OK) return;
+  const h = await recallFolder();
+  if(!h) return;
+  S.saved = h;
+  let perm = "prompt";
+  try{ perm = await h.queryPermission({mode:"readwrite"}); }catch(e){}
+  if(perm === "granted" && await useFolder(h, true)) return;
+  setFolderUI("stale", h.name);
+}
+
+function pickFallback(){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.webkitdirectory = true; inp.multiple = true;
+  inp.onchange = async ()=>{
+    const mdFiles = [];
+    S.imageFiles = new Map(); S.root = null;
+    for(const f of inp.files){
+      // drop the top folder name the browser prepends
+      const rel = String(f.webkitRelativePath || f.name).split("/").slice(1).join("/");
+      if(/^Characters\/[^/]+\.md$/i.test(rel) && !rel.split("/").pop().startsWith("_")){
+        mdFiles.push({name: rel.split("/").pop(), text: await f.text()});
+      } else if(/^Art\//i.test(rel) && IMG_RE.test(rel)){
+        S.imageFiles.set(rel.toLowerCase(), f);
+      }
+    }
+    if(!mdFiles.length){ toast("No character files found in that folder.", true); return; }
+    $("fsDot").className = "dot warn";
+    $("fsLabel").textContent = "read-only";
+    await buildEntries(mdFiles);
+    render();
+  };
+  inp.click();
+}
+
+/* ============================================================
+   READING FILES
+   ============================================================ */
+
+async function scanHandleMode(){
+  const dir = await S.root.getDirectoryHandle("Characters");
+  const mdFiles = [];
+  for await (const [name, h] of dir.entries()){
+    if(h.kind !== "file" || !/\.md$/i.test(name) || name.startsWith("_")) continue;
+    mdFiles.push({name, text: await (await h.getFile()).text()});
+  }
+  await buildEntries(mdFiles);
+}
+
+async function buildEntries(mdFiles){
+  S.entries = [];
+  for(const f of mdFiles){
+    const e = parseEntry(f.name, f.text);
+    e.images = await resolveImages(e);        // Map(category -> [{path,name,url,main}])
+    e.imageCount = [...e.images.values()].reduce((n,a)=>n+a.length, 0);
+    S.entries.push(e);
+  }
+}
+
+/* ---------- frontmatter + section parsing ------------------------------- */
+
+function parseEntry(filename, text){
+  const e = {
+    filename, name: filename.replace(/\.md$/i, ""),
+    status:"", updated:"", tags:[],
+    pronouns:"", species:"", age:"", occupation:"",
+    tagline:"", appearance:"", main_ref:"", art_folder:"", images:new Map(), imageCount:0
+  };
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if(fm){
+    fm[1].split(/\r?\n/).forEach(line=>{
+      const m = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+      if(!m) return;
+      const key = m[1], val = m[2].trim().replace(/^["']|["']$/g, "");
+      if(key === "status") e.status = val;
+      if(key === "updated") e.updated = val;
+      if(key === "name" && val) e.name = val;
+      if(key === "main_ref") e.main_ref = val;
+      if(key === "art_folder") e.art_folder = val;
+      if(["pronouns","species","age","occupation"].includes(key)) e[key] = val;
+      if(key === "tags" && val)
+        e.tags = val.replace(/^\[|\]$/g, "").split(",")
+          .map(t=>t.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    });
+  }
+  const body = fm ? text.slice(fm[0].length) : text;
+  const tag = body.match(/^>\s?(.+)$/m);
+  if(tag) e.tagline = tag[1].trim();
+  e.appearance = sectionText(text, "Appearance");
+  return e;
+}
+
+function sectionText(text, heading){
+  const m = text.match(new RegExp("^##\\s+"+heading+"\\s*$", "m"));
+  if(!m) return "";
+  const rest = text.slice(m.index + m[0].length);
+  const next = rest.match(/^##\s+/m);
+  return (next ? rest.slice(0, next.index) : rest).trim();
+}
+
+/* ---------- images -------------------------------------------------------
+   Works two ways depending on how the folder got connected: a live
+   directory handle (walked segment by segment), or the flat imageFiles map
+   built from a <input webkitdirectory> fallback. main_ref is always tried
+   first and marked; anything else found in art_folder follows, deduped by
+   path so main_ref never appears twice. */
+
+async function fileAt(path){
+  if(S.root){
+    try{
+      const parts = String(path).split("/").filter(Boolean);
+      const name = parts.pop();
+      let d = S.root;
+      for(const p of parts) d = await d.getDirectoryHandle(p);
+      return await (await d.getFileHandle(name)).getFile();
+    }catch(e){ return null; }
+  }
+  if(S.imageFiles) return S.imageFiles.get(String(path).toLowerCase()) || null;
+  return null;
+}
+
+/* Walks one level of subfolders inside art_folder: files sitting directly in
+   art_folder are category "" (Uncategorized); files one folder deeper are
+   grouped by that folder's name. Returns a Map(category -> [{path,name}]). */
+async function scanArtFolder(folder){
+  const parts = String(folder).split("/").filter(Boolean);
+  const map = new Map();
+  const push = (cat, path, name)=>{
+    if(!map.has(cat)) map.set(cat, []);
+    map.get(cat).push({path, name});
+  };
+  if(!parts.length) return map;
+
+  if(S.root){
+    let d = S.root;
+    try{ for(const p of parts) d = await d.getDirectoryHandle(p); }
+    catch(e){ return map; }
+    for await (const [name, h] of d.entries()){
+      if(h.kind === "file" && IMG_RE.test(name)){
+        push("", parts.join("/")+"/"+name, name);
+      } else if(h.kind === "directory"){
+        for await (const [n2, h2] of h.entries()){
+          if(h2.kind === "file" && IMG_RE.test(n2))
+            push(name, parts.join("/")+"/"+name+"/"+n2, n2);
+        }
+      }
+    }
+    return map;
+  }
+
+  if(S.imageFiles){
+    const prefix = parts.join("/").toLowerCase()+"/";
+    for(const key of S.imageFiles.keys()){
+      if(!key.startsWith(prefix) || !IMG_RE.test(key)) continue;
+      const rest = key.slice(prefix.length).split("/");
+      const cat = rest.length > 1 ? rest[0] : "";
+      push(cat, key, rest[rest.length-1]);
+    }
+    return map;
+  }
+  return map;
+}
+
+/* main_ref can point anywhere under art_folder (root or one category deep) -
+   this figures out which category bucket it belongs in so it isn't shown
+   twice. Anything main_ref points to outside art_folder entirely still
+   loads, just uncategorized. */
+function categoryOfPath(artFolder, path){
+  const base = String(artFolder||"").split("/").filter(Boolean);
+  const full = String(path||"").split("/").filter(Boolean);
+  if(!base.length || full.length <= base.length) return "";
+  const matches = base.every((p,i)=>full[i].toLowerCase() === p.toLowerCase());
+  if(!matches) return "";
+  const extra = full.slice(base.length);
+  return extra.length > 1 ? extra[0] : "";
+}
+
+async function resolveImages(e){
+  const cats = new Map(), seen = new Set();
+  const ensure = k => { if(!cats.has(k)) cats.set(k, []); return cats.get(k); };
+
+  const add = async (path, cat, main)=>{
+    const key = String(path||"").toLowerCase();
+    if(!key) return;
+    if(seen.has(key)){
+      if(main) for(const arr of cats.values()){
+        const hit = arr.find(x=>x.path.toLowerCase()===key);
+        if(hit){ hit.main = true; return; }
+      }
+      return;
+    }
+    const file = await fileAt(path);
+    if(!file) return;
+    seen.add(key);
+    ensure(cat).push({ path, name: String(path).split("/").pop(), url: URL.createObjectURL(file), main: !!main });
+  };
+
+  if(e.main_ref) await add(e.main_ref, categoryOfPath(e.art_folder, e.main_ref), true);
+  if(e.art_folder){
+    const byCat = await scanArtFolder(e.art_folder);
+    for(const [cat, files] of byCat) for(const f of files) await add(f.path, cat, false);
+  }
+  for(const arr of cats.values()) arr.sort((a,b)=> (b.main - a.main) || a.name.localeCompare(b.name));
+  return cats;
+}
+
+/* ---------- adding art ----------------------------------------------------
+   Only possible in directory-handle mode (readwrite permission granted) -
+   the webkitdirectory fallback has no write capability at all. A dropped
+   file lands at Art/<slug>/<category>/<name>, creating folders as needed;
+   category "" means directly in art_folder, same as today's loose files. */
+
+async function uniqueName(dir, name){
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext  = dot > 0 ? name.slice(dot) : "";
+  let candidate = name, n = 2;
+  while(true){
+    try{ await dir.getFileHandle(candidate); }
+    catch(e){ return candidate; }               // NotFoundError → name is free
+    candidate = base + " (" + n + ")" + ext; n++;
+  }
+}
+
+async function writeImageFile(artFolder, category, file){
+  const parts = String(artFolder).split("/").filter(Boolean);
+  if(category) parts.push(category);
+  let d = S.root;
+  for(const p of parts) d = await d.getDirectoryHandle(p, {create:true});
+  const name = await uniqueName(d, file.name);
+  const fh = await d.getFileHandle(name, {create:true});
+  const w = await fh.createWritable();
+  await w.write(file);
+  await w.close();
+  return parts.join("/") + "/" + name;
+}
+
+async function addFiles(e, category, fileList){
+  if(!S.root){ toast("Connect the folder to add art.", true); return; }
+  if(!e.art_folder){
+    toast(e.name + " has no art_folder set - add one in the writer first.", true);
+    return;
+  }
+  const all = [...fileList];
+  const files = all.filter(f => IMG_RE.test(f.name));
+  const skipped = all.length - files.length;
+  if(!files.length){
+    toast("Only .png, .jpg, .webp and .gif are web-ready (ground rule #5) - nothing added.", true);
+    return;
+  }
+  let added = 0;
+  for(const f of files){
+    try{ await writeImageFile(e.art_folder, category, f); added++; }
+    catch(err){ toast("Couldn't save "+f.name+": "+(err&&err.message), true); }
+  }
+  if(added){
+    toast(added+" image"+(added===1?"":"s")+" added to "+e.name+" - "+categoryLabel(category)+
+          (skipped ? " ("+skipped+" skipped, not web-ready)" : ""));
+    e.images = await resolveImages(e);
+    e.imageCount = [...e.images.values()].reduce((n,a)=>n+a.length, 0);
+    render();
+  }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function passesFilter(e){
+  const q = S.query.trim().toLowerCase();
+  if(q && !(e.name.toLowerCase().includes(q) || e.tags.some(t=>t.toLowerCase().includes(q)))) return false;
+  if(S.artFilter === "has" && !e.imageCount) return false;
+  if(S.artFilter === "needs" && e.imageCount) return false;
+  return true;
+}
+
+function render(){
+  const board = $("board"); board.textContent = "";
+  const hasSource = !!(S.root || S.imageFiles);
+  $("empty").hidden = hasSource;
+  if(!hasSource) return;
+
+  const list = S.entries.filter(passesFilter)
+    .sort((a,b)=> (b.updated||"").localeCompare(a.updated||"") || a.name.localeCompare(b.name));
+
+  if(!list.length){
+    const p = document.createElement("p"); p.className = "empty";
+    p.textContent = S.entries.length ? "No characters match that filter." : "No character files found yet.";
+    board.appendChild(p);
+    return;
+  }
+  list.forEach(e => board.appendChild(entryEl(e)));
+}
+
+function mainOrFirstImage(e){
+  for(const arr of e.images.values()) for(const img of arr) if(img.main) return img;
+  for(const arr of e.images.values()) if(arr.length) return arr[0];
+  return null;
+}
+
+function entryEl(e){
+  const el = document.createElement("div"); el.className = "entry";
+
+  const head = document.createElement("div"); head.className = "entry-head";
+
+  const port = document.createElement("div"); port.className = "entry-portrait";
+  const main = mainOrFirstImage(e);
+  if(main){
+    const img = document.createElement("img"); img.src = main.url; img.alt = "";
+    port.appendChild(img);
+  } else {
+    port.textContent = (e.name||"?").trim().charAt(0).toUpperCase();
+  }
+  head.appendChild(port);
+
+  const id = document.createElement("div"); id.className = "entry-id";
+  const h3 = document.createElement("h3"); h3.textContent = e.name; id.appendChild(h3);
+  const meta = document.createElement("div"); meta.className = "meta";
+  meta.textContent = [e.pronouns, e.species, e.age && "age "+e.age, e.occupation].filter(Boolean).join(" · ");
+  id.appendChild(meta);
+  if(e.tagline){
+    const q = document.createElement("p"); q.className = "tagline"; q.textContent = e.tagline;
+    id.appendChild(q);
+  }
+  head.appendChild(id);
+
+  const tagsWrap = document.createElement("div"); tagsWrap.className = "entry-tags";
+  const st = document.createElement("span");
+  st.className = "tag" + (e.status && e.status !== "seed" ? " ready" : "");
+  st.textContent = e.status || "no status";
+  tagsWrap.appendChild(st);
+  e.tags.forEach(t=>{
+    const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = t;
+    tagsWrap.appendChild(tg);
+  });
+  const link = document.createElement("a"); link.className = "entry-link";
+  link.href = "character-writer.html#type=character&mode=form&open="+encodeURIComponent(e.filename);
+  link.textContent = "Edit in writer →";
+  tagsWrap.appendChild(link);
+  head.appendChild(tagsWrap);
+
+  el.appendChild(head);
+
+  if(e.appearance){
+    const ap = document.createElement("div"); ap.className = "appearance";
+    ap.innerHTML = "<b>Appearance - </b>" + esc(e.appearance).replace(/\s*\n+\s*/g, " ");
+    el.appendChild(ap);
+  }
+
+  if(!e.art_folder){
+    const box = document.createElement("div"); box.className = "no-art";
+    box.textContent = "No art_folder set yet. Add one in the writer, then come back to drop in art.";
+    el.appendChild(box);
+    return el;
+  }
+
+  const canWrite = !!S.root;
+  const keys = [""].concat(DEFAULT_CATEGORIES.map(c=>c.key));
+  const displayKeys = keys.filter(k => canWrite || (e.images.get(k)||[]).length);
+  for(const k of e.images.keys()){
+    if(!displayKeys.includes(k)) displayKeys.push(k);   // custom folders found on disk
+  }
+
+  if(!displayKeys.length){
+    const box = document.createElement("div"); box.className = "no-art";
+    box.innerHTML = "No images in <code>"+esc(e.art_folder)+"</code> yet. Drop ref sheets, "+
+      "sketches or outfit art in there - this board picks them up automatically.";
+    el.appendChild(box);
+    return el;
+  }
+
+  const flat = [];   // shared across sections so the lightbox can page through all of them in order
+  const wrap = document.createElement("div"); wrap.className = "categories";
+  displayKeys.forEach(k => wrap.appendChild(categorySectionEl(e, k, e.images.get(k)||[], flat)));
+  el.appendChild(wrap);
+  e._flat = flat;
+
+  return el;
+}
+
+function categorySectionEl(e, key, items, flat){
+  const sec = document.createElement("div"); sec.className = "cat";
+
+  const head = document.createElement("div"); head.className = "cat-head";
+  const lbl = document.createElement("span"); lbl.className = "cat-label"; lbl.textContent = categoryLabel(key);
+  head.appendChild(lbl);
+  if(items.length){
+    const cnt = document.createElement("span"); cnt.className = "cat-count"; cnt.textContent = items.length;
+    head.appendChild(cnt);
+  }
+
+  const canWrite = !!S.root;
+  if(canWrite){
+    const add = document.createElement("label");
+    add.className = "cat-add"; add.title = "Add images to " + categoryLabel(key);
+    add.textContent = "+";
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp,image/gif"; inp.multiple = true; inp.hidden = true;
+    inp.onchange = ()=>{ if(inp.files.length) addFiles(e, key, inp.files); inp.value = ""; };
+    add.appendChild(inp);
+    head.appendChild(add);
+  }
+  sec.appendChild(head);
+
+  if(items.length){
+    const grid = document.createElement("div"); grid.className = "gallery";
+    items.forEach(img=>{
+      const idx = flat.length; flat.push(img);
+      const t = document.createElement("div"); t.className = "thumb";
+      const im = document.createElement("img"); im.src = img.url; im.alt = e.name + " - " + img.name;
+      t.appendChild(im);
+      if(img.main){
+        const pill = document.createElement("span"); pill.className = "pill"; pill.textContent = "main";
+        t.appendChild(pill);
+      }
+      t.onclick = ()=>openLightbox(e, idx);
+      grid.appendChild(t);
+    });
+    sec.appendChild(grid);
+  } else {
+    const ph = document.createElement("div"); ph.className = "cat-empty";
+    ph.textContent = canWrite ? "Drop images here, or click + above." : "No images yet.";
+    sec.appendChild(ph);
+  }
+
+  if(canWrite){
+    sec.ondragover = ev=>{ ev.preventDefault(); sec.classList.add("drag"); };
+    sec.ondragleave = ()=> sec.classList.remove("drag");
+    sec.ondrop = ev=>{
+      ev.preventDefault(); sec.classList.remove("drag");
+      if(ev.dataTransfer.files.length) addFiles(e, key, ev.dataTransfer.files);
+    };
+  }
+
+  return sec;
+}
+
+/* ---------- lightbox ------------------------------------------------------ */
+
+function openLightbox(e, i){
+  S.lb = { e, i };
+  renderLightbox();
+  $("lightbox").classList.add("show");
+}
+
+function renderLightbox(){
+  const { e, i } = S.lb;
+  const list = e._flat || [];
+  const img = list[i];
+  $("lbImg").src = img.url;
+  $("lbCap").textContent = e.name + " - " + img.name + " (" + (i+1) + "/" + list.length + ")";
+  const multi = list.length > 1;
+  $("lbPrev").style.display = multi ? "" : "none";
+  $("lbNext").style.display = multi ? "" : "none";
+}
+
+function lbStep(delta){
+  if(!S.lb) return;
+  const { e, i } = S.lb;
+  const len = (e._flat || []).length;
+  S.lb.i = (i + delta + len) % len;
+  renderLightbox();
+}
+
+function closeLightbox(){
+  $("lightbox").classList.remove("show");
+  S.lb = null;
+}
+
+/* ---------- misc ----------------------------------------------------------- */
+
+let toastTimer = null;
+function toast(msg, bad){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (bad ? " bad" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = ""; }, 4200);
+}
+
+/* ---------- theme (this tool has no Settings dialog of its own - it just
+   cycles ◐/☾/☀ like the writer and the family tree, and follows "look"
+   changes made on the home page via the shared storage event) ------------ */
+
+const SYSTEM_LIGHT = window.matchMedia("(prefers-color-scheme: light)");
+const THEME_ICON = { system:"◐", dark:"☾", light:"☀" };
+const THEME_TITLE = { system:"Theme: follows your system", dark:"Theme: dark", light:"Theme: light" };
+
+function themePref(){
+  try{ const v = localStorage.getItem("cdb-theme"); return (v==="light"||v==="dark") ? v : "system"; }
+  catch(e){ return "system"; }
+}
+
+function applyTheme(pref){
+  const dark = pref === "system" ? !SYSTEM_LIGHT.matches : pref === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $("btnTheme").textContent = THEME_ICON[pref];
+  $("btnTheme").title = THEME_TITLE[pref] + " - click to change";
+}
+
+$("btnTheme").onclick = ()=>{
+  /* Flip to the opposite of what's actually on screen. The old
+     system -> dark -> light cycle spent a click doing nothing visible: on a
+     machine whose OS is dark, "follow system" and "dark" render identically,
+     so reaching light took two clicks while returning took one. Following the
+     system is still selectable from the dashboard's settings, which lists all
+     three explicitly. */
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{ if(next === "system") localStorage.removeItem("cdb-theme"); else localStorage.setItem("cdb-theme", next); }
+  catch(e){}
+  applyTheme(next);
+};
+SYSTEM_LIGHT.addEventListener("change", ()=>{ if(themePref() === "system") applyTheme("system"); });
+window.addEventListener("storage", e=>{
+  if(e.key === null || e.key === "cdb-look"){
+    let look = null;
+    try{ look = localStorage.getItem("cdb-look"); }catch(err){}
+    document.documentElement.dataset.look = (["atlas","board","iris","rose","slate"].indexOf(look) >= 0) ? look : "field";
+  }
+  if(e.key === null || e.key === "cdb-theme" || e.key === "cdb-look") applyTheme(themePref());
+});
+applyTheme(themePref());
+
+/* ---------- wiring ---------------------------------------------------------- */
+
+// a drop that misses every category box would otherwise make the browser
+// navigate to the dropped file - swallow it instead
+window.addEventListener("dragover", e=>e.preventDefault());
+window.addEventListener("drop", e=>e.preventDefault());
+
+$("btnConnect").onclick = connectFolder;
+
+$("q").oninput = ()=>{ S.query = $("q").value; render(); };
+[...document.querySelectorAll("#artSeg button")].forEach(b => b.onclick = ()=>{
+  S.artFilter = b.dataset.art;
+  [...document.querySelectorAll("#artSeg button")].forEach(x=>x.classList.toggle("on", x===b));
+  render();
+});
+
+$("lbClose").onclick = closeLightbox;
+$("lbPrev").onclick = ()=>lbStep(-1);
+$("lbNext").onclick = ()=>lbStep(1);
+$("lightbox").onclick = e=>{ if(e.target.id === "lightbox") closeLightbox(); };
+document.addEventListener("keydown", e=>{
+  if(!$("lightbox").classList.contains("show")) return;
+  if(e.key === "Escape") closeLightbox();
+  if(e.key === "ArrowLeft") lbStep(-1);
+  if(e.key === "ArrowRight") lbStep(1);
+});
+
+if(!FS_OK){ $("fsDot").className = "dot warn"; $("fsLabel").textContent = "read-only mode"; }
+else restoreFolder();
+
+/* ============================================================
+   TOOL NAV DRAWER
+   ============================================================
+   The three-line button in the header opens a list of every tool. Pure
+   navigation: it stores nothing and reads nothing from the database folder,
+   so it works before a folder is ever connected.
+
+   NAV_TOOLS is repeated in each tool on purpose - these pages are standalone
+   by design, with no build step and no shared runtime. Adding a tool later is
+   one line here, in each file.
+   ============================================================ */
+const NAV_TOOLS = [
+  {g:"⌂", label:"Home",        href:"index.html"},
+  {g:"✎", label:"Writer",      href:"character-writer.html"},
+  {g:"▤", label:"Library",     href:"library.html"},
+  {g:"⁂", label:"Family tree", href:"family-tree.html"},
+  {g:"◎", label:"World map",   href:"world-map.html"},
+  {g:"¶", label:"Manuscript",  href:"manuscript.html"},
+  {g:"▣", label:"Art board",   href:"art-board.html"},
+  {g:"⌕", label:"Search",      href:"search.html"},
+  {g:"◷", label:"Timeline",    href:"timeline.html"}
+];
+const NAV_HERE = "art-board.html";
+/* This page lives in Tools/; the dashboard is one level up. NAV_TOOLS
+   entries keep the bare filename as their stable id (the saved order is
+   keyed on it), and these two turn an id into a link from here. */
+const NAV_BASE = "";
+const NAV_HOME = "../index.html";
+
+(function(){
+  const btn = document.getElementById("btnNav");
+  if(!btn) return;
+
+  const scrim = document.createElement("div");
+  scrim.id = "navScrim";
+
+  const drawer = document.createElement("nav");
+  drawer.id = "navDrawer";
+  drawer.setAttribute("aria-label", "Tools");
+
+  const h = document.createElement("h2");
+  h.textContent = "Tools";
+  drawer.appendChild(h);
+
+  /* The list order is yours - drag a row to move it. The order rides one
+     shared localStorage key so every tool shows the same list (pure UI
+     convenience, no world data - GROUND-RULES rule 1). A tool missing from
+     the saved order - a future new one - keeps its default place. */
+  const NAV_ORDER_KEY = "cdb-navorder";
+  function navOrder(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY) || "null"); }catch(e){}
+    if(!Array.isArray(saved)) return NAV_TOOLS.slice();
+    const byHref = new Map(NAV_TOOLS.map(t=>[t.href, t]));
+    const out = [];
+    saved.forEach(href=>{ const t = byHref.get(href); if(t){ out.push(t); byHref.delete(href); } });
+    NAV_TOOLS.forEach(t=>{ if(byHref.has(t.href)) out.push(t); });
+    return out;
+  }
+  function saveOrder(list){
+    try{ localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(list.map(t=>t.href))); }catch(e){}
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "navfoot";
+  foot.textContent = "Drag a row to reorder - every tool follows. They all read the same folder: connect it once and they remember it.";
+
+  let dragHref = null;
+  function renderNav(){
+    [...drawer.querySelectorAll("a, span.navhere")].forEach(el=>el.remove());
+    navOrder().forEach(t=>{
+      const here = t.href === NAV_HERE;
+      const el = document.createElement(here ? "span" : "a");
+      if(here){ el.className = "navhere"; el.setAttribute("aria-current","page"); }
+      else { el.href = t.href === "index.html" ? NAV_HOME : NAV_BASE + t.href; }
+      const g = document.createElement("span"); g.className = "g"; g.textContent = t.g;
+      const s = document.createElement("span"); s.textContent = t.label;
+      el.append(g, s);
+      el.draggable = true;
+      el.title = "Drag to reorder";
+      el.addEventListener("dragstart", e=>{
+        dragHref = t.href;
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", t.href); }catch(err){}
+      });
+      el.addEventListener("dragover", e=>{ if(dragHref && dragHref !== t.href) e.preventDefault(); });
+      el.addEventListener("drop", e=>{
+        e.preventDefault();
+        if(!dragHref || dragHref === t.href) return;
+        const cur = navOrder();
+        const from = cur.findIndex(x=>x.href === dragHref);
+        const to = cur.findIndex(x=>x.href === t.href);
+        if(from < 0 || to < 0) return;
+        const moved = cur.splice(from, 1)[0];
+        cur.splice(to, 0, moved);
+        saveOrder(cur);
+        dragHref = null;
+        renderNav();
+      });
+      el.addEventListener("dragend", ()=>{ dragHref = null; });
+      drawer.insertBefore(el, foot);
+    });
+  }
+
+  drawer.appendChild(foot);
+  renderNav();
+  /* a reorder made in another open tab shows up here too */
+  window.addEventListener("storage", e=>{
+    if(e.key === null || e.key === NAV_ORDER_KEY) renderNav();
+  });
+
+  document.body.append(scrim, drawer);
+
+  let open = false;
+  function setNav(next){
+    open = next;
+    scrim.classList.toggle("open", open);
+    drawer.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if(open){
+      const first = drawer.querySelector("a");
+      if(first) first.focus();
+    } else {
+      btn.focus();
+    }
+  }
+
+  btn.setAttribute("aria-expanded","false");
+  btn.onclick = e => { e.stopPropagation(); setNav(!open); };
+  scrim.onclick = () => setNav(false);
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape" && open){ e.stopPropagation(); setNav(false); }
+  }, true);
+})();
+</script>
+
+<!-- cloud storage: makes Supabase look like the folder these tools expect -->
+<script src="/world-codex/config.js"></script>
+<script src="/world-codex/cloud-fs.js"></script>
+</body>
+</html>
