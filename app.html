@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark light">
+<title>Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#14131a; --bg2:#1b1a23; --bg3:#232130; --line:#332f42;
+  --ink:#e9e5f2; --dim:#a49dbb; --faint:#6f6883;
+  --accent:#a78bdb; --accent2:#7fd1c1; --warn:#e0885f; --bad:#e06a6a;
+  --radius:10px; --sw:280px;
+}
+html[data-theme=light]{
+  --bg:#f6f3ec; --bg2:#fffdf8; --bg3:#efe9dc; --line:#ddd3c0;
+  --ink:#23202b; --dim:#5d5568; --faint:#8b8398;
+  --accent:#6c4bb0; --accent2:#1f7d6c; --warn:#a75a2a; --bad:#b23b3b;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"EB Garamond",Georgia,serif; font-size:17px; line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent2)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.86em}
+
+/* ---------------------------------------------------------------- shell -- */
+#shell{display:none;grid-template-rows:auto 1fr;height:100%}
+#shell.on{display:grid}
+#top{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  border-bottom:1px solid var(--line);background:var(--bg2);
+  position:sticky;top:0;z-index:40;
+}
+#top h1{
+  font-family:Cinzel,serif;font-size:16px;letter-spacing:.06em;margin:0;
+  white-space:nowrap;font-weight:600;
+}
+#top .sp{flex:1}
+.btn{
+  background:var(--bg3);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:6px 11px;cursor:pointer;font-size:14px;
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#15121d;font-weight:500}
+html[data-theme=light] .btn.p{color:#fff}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.sm{padding:3px 8px;font-size:12.5px}
+#burger{display:none}
+#q{
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;
+  padding:6px 10px;width:min(320px,38vw);font-size:14px;
+}
+#q:focus{outline:none;border-color:var(--accent)}
+
+#body{display:grid;grid-template-columns:var(--sw) 1fr;min-height:0}
+#side{
+  border-right:1px solid var(--line);background:var(--bg2);overflow-y:auto;
+  padding:10px 0 60px;min-height:0;
+}
+#main{overflow-y:auto;min-height:0;padding:0 0 80px}
+.wrap{max-width:760px;margin:0 auto;padding:22px 20px}
+
+/* ------------------------------------------------------------- sidebar -- */
+.sec{margin-bottom:2px}
+.sec>h2{
+  display:flex;align-items:center;gap:6px;margin:0;padding:7px 12px;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--dim);cursor:pointer;user-select:none;
+}
+.sec>h2:hover{color:var(--ink)}
+.sec>h2 .caret{width:10px;display:inline-block;transition:transform .12s;color:var(--faint)}
+.sec.closed>h2 .caret{transform:rotate(-90deg)}
+.sec>h2 .n{margin-left:auto;color:var(--faint);font-size:11px}
+.sec>h2 .dot{width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.sec.closed ul{display:none}
+.sec ul{list-style:none;margin:0;padding:0}
+.sec li a{
+  display:block;padding:5px 12px 5px 28px;color:var(--dim);text-decoration:none;
+  font-size:15px;border-left:2px solid transparent;
+}
+.sec li a:hover{background:var(--bg3);color:var(--ink)}
+.sec li a.on{background:var(--bg3);color:var(--ink);border-left-color:var(--accent)}
+.sec li a .st{float:right;font-size:10.5px;color:var(--faint);font-family:"IBM Plex Mono",monospace}
+.empty{padding:8px 28px;color:var(--faint);font-size:13px;font-style:italic}
+
+/* ---------------------------------------------------------------- read -- */
+.ehead{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}
+.ehead h1{font-family:Cinzel,serif;font-size:30px;margin:0 0 6px;line-height:1.2}
+.badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.badge{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+  padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim);
+}
+.badge.t{border-color:var(--accent);color:var(--accent)}
+.tagline{color:var(--dim);font-style:italic;margin:10px 0 0}
+.facts{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;margin:0 0 22px;
+}
+.facts dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+.facts dt{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.06em;padding-top:3px;
+}
+.facts dd{margin:0}
+.doc h1{font-family:Cinzel,serif;font-size:26px;margin:26px 0 8px}
+.doc h2{
+  font-family:Cinzel,serif;font-size:18px;margin:26px 0 6px;
+  border-bottom:1px solid var(--line);padding-bottom:4px;
+}
+.doc h3{font-family:Cinzel,serif;font-size:15.5px;margin:18px 0 4px}
+.doc p{margin:0 0 12px}
+.doc blockquote{
+  margin:0 0 14px;padding:2px 0 2px 14px;border-left:3px solid var(--accent);
+  color:var(--dim);font-style:italic;
+}
+.doc blockquote p{margin:0 0 6px}
+.doc ul,.doc ol{margin:0 0 14px;padding-left:22px}
+.doc li{margin:3px 0}
+.doc li.task{list-style:none;margin-left:-18px;display:flex;gap:8px;align-items:flex-start}
+.doc li.task .box{
+  flex:0 0 auto;width:15px;height:15px;border:1px solid var(--line);border-radius:3px;
+  font-size:11px;line-height:13px;text-align:center;margin-top:4px;color:var(--accent2);
+}
+.doc li.task .box.on{border-color:var(--accent2)}
+.doc table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+.doc th,.doc td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.doc th{background:var(--bg3);font-family:"IBM Plex Mono",monospace;font-size:12px;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+.doc hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+.doc code{background:var(--bg3);padding:1px 5px;border-radius:4px}
+.doc img.inl,.portrait img{max-width:100%;border-radius:var(--radius);display:block}
+.portrait{margin:0 0 18px}
+a.wl{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+a.wl:hover{border-bottom-style:solid}
+.wl.dead{color:var(--warn);border-bottom:1px dotted var(--warn);cursor:help}
+
+/* ---------------------------------------------------------------- edit -- */
+.field{margin:0 0 12px}
+.field>label{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:3px;
+}
+.inp{
+  width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;font-size:15px;
+}
+.inp:focus{outline:none;border-color:var(--accent)}
+textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:1.6;resize:vertical}
+.chips{
+  display:flex;flex-wrap:wrap;gap:5px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:8px;padding:5px 6px;
+}
+.chips:focus-within{border-color:var(--accent)}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;background:var(--bg3);
+  border:1px solid var(--line);border-radius:99px;padding:2px 6px 2px 9px;font-size:13.5px;
+}
+.chip b{font-weight:400}
+.chip button{background:none;border:0;color:var(--faint);cursor:pointer;padding:0 2px;font-size:14px}
+.chip button:hover{color:var(--bad)}
+.chips input{flex:1;min-width:110px;background:none;border:0;padding:3px 4px;font-size:14.5px}
+.chips input:focus{outline:none}
+#pop{
+  position:absolute;z-index:80;background:var(--bg2);border:1px solid var(--accent);
+  border-radius:8px;max-height:230px;overflow-y:auto;min-width:200px;display:none;
+  box-shadow:0 10px 26px rgba(0,0,0,.4);
+}
+#pop.on{display:block}
+#pop div{padding:6px 11px;cursor:pointer;font-size:14.5px}
+#pop div.sel,#pop div:hover{background:var(--bg3)}
+#pop div small{color:var(--faint);margin-left:6px;font-size:11.5px}
+.editbar{
+  position:sticky;bottom:0;background:var(--bg2);border-top:1px solid var(--line);
+  padding:9px 12px;display:flex;gap:8px;align-items:center;z-index:30;
+  padding-bottom:calc(9px + env(safe-area-inset-bottom));
+}
+.editbar .sp{flex:1}
+.hint{color:var(--faint);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+.sub{color:var(--dim);font-size:13.5px;margin:-6px 0 14px}
+
+/* --------------------------------------------------------------- login -- */
+#login{
+  display:none;place-items:center;height:100%;padding:22px;
+}
+#login.on{display:grid}
+.card{
+  width:min(420px,100%);background:var(--bg2);border:1px solid var(--line);
+  border-radius:14px;padding:26px 24px;
+}
+.card h1{font-family:Cinzel,serif;font-size:23px;margin:0 0 6px}
+.card p{color:var(--dim);font-size:15px;margin:0 0 16px}
+.msg{margin-top:14px;font-size:14px}
+.msg.err{color:var(--bad)}
+.msg.ok{color:var(--accent2)}
+
+/* --------------------------------------------------------------- modal -- */
+#modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  place-items:center;z-index:100;padding:20px;
+}
+#modal.on{display:grid}
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:200;
+  background:var(--bg3);border:1px solid var(--line);border-radius:99px;
+  padding:8px 16px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;
+}
+#toast.on{opacity:1}
+
+@media (max-width:820px){
+  #body{grid-template-columns:1fr}
+  #side{
+    position:fixed;top:49px;bottom:0;left:0;width:min(300px,84vw);z-index:50;
+    transform:translateX(-102%);transition:transform .18s;
+    box-shadow:0 0 30px rgba(0,0,0,.45);
+  }
+  #side.open{transform:none}
+  #burger{display:inline-block}
+  #q{width:auto;flex:1;min-width:0}
+  #top h1{display:none}
+  .wrap{padding:16px 14px}
+  .ehead h1{font-size:25px}
+  #scrim{position:fixed;inset:49px 0 0;background:rgba(0,0,0,.45);z-index:45;display:none}
+  #scrim.on{display:block}
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <h1>Codex</h1>
+    <p>Sign in to read and edit your world. We email you a link - no password.</p>
+    <input id="email" class="inp" type="email" placeholder="you@example.com" autocomplete="email">
+    <div style="height:10px"></div>
+    <button id="sendLink" class="btn p" style="width:100%">Email me a sign-in link</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="shell">
+  <div id="top">
+    <button id="burger" class="btn sm">☰</button>
+    <h1>CODEX</h1>
+    <input id="q" placeholder="Search everything…">
+    <span class="sp"></span>
+    <button id="newBtn" class="btn sm">+ New</button>
+    <button id="themeBtn" class="btn sm" title="Light / dark">◐</button>
+    <button id="outBtn" class="btn sm" title="Sign out">⏻</button>
+  </div>
+  <div id="body">
+    <nav id="side"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+<div id="scrim"></div>
+<div id="pop"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+/* ---------------------------------------------------------------- frontmatter
+   A deliberately small YAML subset - the same one build-site.py and the local
+   tools assume. Parsing keeps the original key order and the original raw text
+   for every key, so a round trip through this code never reorders or reformats
+   a field nobody touched. That is the whole point: the markdown stays yours.  */
+
+function splitFrontmatter(text) {
+  const t = text.replace(/\r\n/g, "\n");
+  if (!t.startsWith("---\n")) return { fm: "", body: t, hasFm: false };
+  const end = t.indexOf("\n---", 3);
+  if (end === -1) return { fm: "", body: t, hasFm: false };
+  const after = t.indexOf("\n", end + 1);
+  return {
+    fm: t.slice(4, end + 1),
+    body: after === -1 ? "" : t.slice(after + 1),
+    hasFm: true,
+  };
+}
+
+function stripComment(v) {
+  // a # only starts a comment when it is not inside quotes or brackets
+  let out = "", q = null, depth = 0;
+  for (let i = 0; i < v.length; i++) {
+    const c = v[i];
+    if (q) { out += c; if (c === q && v[i - 1] !== "\\") q = null; continue; }
+    if (c === '"' || c === "'") { q = c; out += c; continue; }
+    if (c === "[") depth++;
+    if (c === "]") depth--;
+    if (c === "#" && depth === 0 && (i === 0 || /\s/.test(v[i - 1]))) break;
+    out += c;
+  }
+  return out.trim();
+}
+
+function parseScalar(raw) {
+  const v = stripComment(raw);
+  if (v === "") return "";
+  if (v === "true") return true;
+  if (v === "false") return false;
+  if (v === "null" || v === "~") return "";
+  if (v.startsWith("[")) return parseList(v);
+  if ((v.startsWith('"') && v.endsWith('"') && v.length > 1) ||
+      (v.startsWith("'") && v.endsWith("'") && v.length > 1)) {
+    return v.slice(1, -1).replace(/\\"/g, '"');
+  }
+  if (/^-?\d+$/.test(v)) return parseInt(v, 10);
+  return v;
+}
+
+function parseList(v) {
+  const inner = v.replace(/^\[/, "").replace(/\]$/, "").trim();
+  if (!inner) return [];
+  const out = [];
+  let cur = "", q = null;
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i];
+    if (q) { if (c === q && inner[i - 1] !== "\\") { q = null; } else { cur += c; } continue; }
+    if (c === '"' || c === "'") { q = c; continue; }
+    if (c === ",") { out.push(cur.trim()); cur = ""; continue; }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out.filter((s) => s !== "");
+}
+
+/* Returns { order:[key], values:{key:parsed}, raw:{key:rawline}, lead:{key:comments} } */
+function parseFrontmatter(fmText) {
+  const order = [], values = {}, raw = {}, lead = {}, orig = {};
+  let pending = [];
+  const lines = fmText.replace(/\n$/, "").split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*$/.test(line)) { pending.push(""); continue; }
+    if (/^\s*#/.test(line)) { pending.push(line); continue; }
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):(.*)$/);
+    if (!m) { pending.push(line); continue; }
+    const key = m[1];
+    let val = m[2];
+    const srcLines = [line];
+    // fold continuation lines (indented, no key of their own)
+    while (i + 1 < lines.length && /^\s+\S/.test(lines[i + 1]) &&
+           !/^\s*[A-Za-z_][A-Za-z0-9_-]*:/.test(lines[i + 1]) &&
+           !/^\s*#/.test(lines[i + 1])) {
+      srcLines.push(lines[i + 1]);
+      val += " " + lines[++i].trim();
+    }
+    order.push(key);
+    raw[key] = val.trim();
+    orig[key] = srcLines.join("\n");
+    values[key] = parseScalar(val);
+    lead[key] = pending.join("\n");
+    pending = [];
+  }
+  return { order, values, raw, lead, orig, tail: pending.join("\n") };
+}
+
+function needsQuote(s) {
+  return /^[\[\]{}&*!|>%@`"']/.test(s) || /:\s/.test(s) || /^\s|\s$/.test(s) ||
+         s.startsWith("[[") || /^#/.test(s);
+}
+
+function fmtScalar(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (typeof v === "number") return String(v);
+  if (Array.isArray(v)) {
+    if (!v.length) return "[]";
+    return "[" + v.map((x) => '"' + String(x).replace(/"/g, '\\"') + '"').join(", ") + "]";
+  }
+  const s = String(v);
+  if (s === "") return "";
+  return needsQuote(s) ? '"' + s.replace(/"/g, '\\"') + '"' : s;
+}
+
+/* Rebuild the file. Keys keep their original order and their comment blocks;
+   new keys are appended. Untouched keys are written back byte for byte. */
+function buildFile(parsed, newValues, body) {
+  const seen = new Set();
+  const out = [];
+  for (const key of parsed.order) {
+    seen.add(key);
+    if (parsed.lead[key]) out.push(parsed.lead[key]);
+    if (Object.prototype.hasOwnProperty.call(newValues, key)) {
+      const formatted = fmtScalar(newValues[key]);
+      out.push(formatted === "" ? key + ":" : key + ": " + formatted);
+    } else if (parsed.orig && parsed.orig[key] !== undefined) {
+      out.push(parsed.orig[key]);
+    } else {
+      out.push(parsed.raw[key] === "" ? key + ":" : key + ": " + parsed.raw[key]);
+    }
+  }
+  for (const key of Object.keys(newValues)) {
+    if (seen.has(key)) continue;
+    const formatted = fmtScalar(newValues[key]);
+    out.push(formatted === "" ? key + ":" : key + ": " + formatted);
+  }
+  if (parsed.tail) out.push(parsed.tail);
+  const fm = out.join("\n").replace(/\n+$/, "");
+  return "---\n" + fm + "\n---\n\n" + body.replace(/^\n+/, "");
+}
+
+/* ------------------------------------------------------------------- typing */
+
+function typeOf(path) {
+  const p = path.replace(/\\/g, "/");
+  if (p.startsWith("Characters/")) return "character";
+  if (p.startsWith("World/Locations/")) return "location";
+  if (p.startsWith("World/Factions/")) return "faction";
+  if (p.startsWith("Events/")) return "event";
+  if (p.startsWith("Stories/")) {
+    const rest = p.slice("Stories/".length);
+    return rest.includes("/") ? "chapter" : "story";
+  }
+  return "world-index";
+}
+
+function slugify(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "untitled";
+}
+
+function stripScratch(body) {
+  // GROUND-RULES rule 6: ## Scratch never leaves the file.
+  const lines = body.split("\n");
+  const out = [];
+  let skipping = false;
+  for (const line of lines) {
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      const isScratch = /^scratch\b/i.test(h[2].trim());
+      if (isScratch) { skipping = true; continue; }
+      if (skipping && h[1].length <= 2) skipping = false;
+    }
+    if (!skipping) out.push(line);
+  }
+  return out.join("\n").trim();
+}
+
+function titleFromPath(path) {
+  const base = path.split("/").pop() || path;
+  return base.replace(/\.md$/i, "");
+}
+
+/* Build the `entries` row that mirrors a file, so the derived index stays
+   truthful after a browser edit and the static site can still be rebuilt. */
+function entryRow(worldId, path, content) {
+  const { fm, body } = splitFrontmatter(content);
+  const parsed = parseFrontmatter(fm);
+  const v = parsed.values;
+  const name = (v.name && String(v.name)) || v.title || titleFromPath(path);
+  const frontmatter = {};
+  for (const k of parsed.order) frontmatter[k] = v[k];
+  let tags = v.tags;
+  if (!Array.isArray(tags)) tags = tags ? [String(tags)] : [];
+  return {
+    world_id: worldId,
+    path,
+    type: typeOf(path),
+    name: String(name),
+    slug: slugify(name),
+    status: v.status ? String(v.status) : null,
+    tags,
+    frontmatter,
+    body_text: stripScratch(body),
+    is_private: v.private === true,
+  };
+}
+
+/* ------------------------------------------------------------------ markdown
+   Small on purpose. Handles what these files actually contain: headings,
+   blockquotes, lists, checkboxes, tables, images, links, wikilinks, bold,
+   italic, inline code, hr.                                                   */
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderInline(s, resolve) {
+  let out = escapeHtml(s);
+  out = out.replace(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (m, t) => {
+    const r = resolve ? resolve(t.trim()) : null;
+    return r && r.img ? `<img class="inl" src="${escapeHtml(r.img)}" alt="">` : "";
+  });
+  out = out.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, target, label) => {
+    const t = target.trim();
+    const text = escapeHtml(label ? label.trim() : t);
+    const r = resolve ? resolve(t) : null;
+    return r && r.path
+      ? `<a class="wl" data-path="${escapeHtml(r.path)}" href="#">${text}</a>`
+      : `<span class="wl dead" title="no entry named ${escapeHtml(t)}">${text}</span>`;
+  });
+  out = out.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+    (m, alt, src) => `<img class="inl" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`);
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    (m, txt, href) => `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${txt}</a>`);
+  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  return out;
+}
+
+function renderMarkdown(md, resolve) {
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+  const flushPara = (buf) => {
+    if (buf.length) out.push("<p>" + renderInline(buf.join(" "), resolve) + "</p>");
+    buf.length = 0;
+  };
+  const para = [];
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*$/.test(line)) { flushPara(para); i++; continue; }
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      flushPara(para);
+      const lvl = h[1].length;
+      out.push(`<h${lvl}>${renderInline(h[2], resolve)}</h${lvl}>`);
+      i++; continue;
+    }
+    if (/^(---|\*\*\*|___)\s*$/.test(line)) { flushPara(para); out.push("<hr>"); i++; continue; }
+    if (/^\s*>/.test(line)) {
+      flushPara(para);
+      const buf = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ""));
+      out.push("<blockquote>" + renderMarkdown(buf.join("\n"), resolve) + "</blockquote>");
+      continue;
+    }
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      flushPara(para);
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells = (r) => r.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+      const head = cells(rows[0]);
+      const body = rows.slice(2).map(cells).filter((r) => r.some((c) => c !== ""));
+      out.push(
+        "<table><thead><tr>" + head.map((c) => `<th>${renderInline(c, resolve)}</th>`).join("") +
+        "</tr></thead><tbody>" +
+        body.map((r) => "<tr>" + r.map((c) => `<td>${renderInline(c, resolve)}</td>`).join("") + "</tr>").join("") +
+        "</tbody></table>"
+      );
+      continue;
+    }
+    const li = line.match(/^\s*([-*+]|\d+\.)\s+(.*)$/);
+    if (li) {
+      flushPara(para);
+      const ordered = /\d/.test(li[1]);
+      const items = [];
+      while (i < lines.length) {
+        const m2 = lines[i].match(/^\s*([-*+]|\d+\.)\s+(.*)$/);
+        if (!m2) break;
+        let txt = m2[2];
+        i++;
+        while (i < lines.length && /^\s{2,}\S/.test(lines[i]) &&
+               !/^\s*([-*+]|\d+\.)\s+/.test(lines[i])) txt += " " + lines[i++].trim();
+        const cb = txt.match(/^\[( |x|X)\]\s*(.*)$/);
+        if (cb) {
+          const done = cb[1].toLowerCase() === "x";
+          items.push(`<li class="task"><span class="box${done ? " on" : ""}">${done ? "✓" : ""}</span>` +
+            renderInline(cb[2], resolve) + "</li>");
+        } else {
+          items.push("<li>" + renderInline(txt, resolve) + "</li>");
+        }
+      }
+      out.push(`<${ordered ? "ol" : "ul"}>` + items.join("") + `</${ordered ? "ol" : "ul"}>`);
+      continue;
+    }
+    para.push(line);
+    i++;
+  }
+  flushPara(para);
+  return out.join("\n");
+}
+
+
+/* ------------------------------------------------------------------ setup */
+const CFG = window.CDB_CONFIG || {};
+const WORLD_SLUG = CFG.slug || "character-database";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+if (!CFG.url || !CFG.key) {
+  document.body.innerHTML =
+    '<div style="padding:40px;font-family:monospace">config.js is missing or empty. ' +
+    'It should set window.CDB_CONFIG = {url:"…", key:"…"}.</div>';
+  throw new Error("no config");
+}
+const sb = createClient(CFG.url, CFG.key, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+});
+
+const S = {
+  worldId: null,
+  files: new Map(),      // path -> { content, deleted_at }
+  index: [],             // parsed entries
+  byName: new Map(),     // lowercased name/alias -> path
+  current: null,         // path
+  editing: false,
+  rawMode: false,
+  dirty: false,
+  draft: null,           // { values:{}, body:"", raw:null }
+  closed: new Set(JSON.parse(localStorage.getItem("cdb-closed") || "[]")),
+};
+
+const SECTIONS = [
+  { key: "character",   label: "Characters", dir: "Characters",       color: "#a78bdb" },
+  { key: "location",    label: "Locations",  dir: "World/Locations",  color: "#7fd1c1" },
+  { key: "faction",     label: "Factions",   dir: "World/Factions",   color: "#e0885f" },
+  { key: "story",       label: "Stories",    dir: "Stories",          color: "#e2c46a" },
+  { key: "chapter",     label: "Chapters",   dir: "Stories",          color: "#c9a0dc" },
+  { key: "event",       label: "Events",     dir: "Events",           color: "#6fa8dc" },
+  { key: "world-index", label: "World",      dir: "World",            color: "#9aa3b8" },
+];
+const SEC = Object.fromEntries(SECTIONS.map((s) => [s.key, s]));
+
+const LIST_KEYS = new Set(["aliases","tags","affiliations","stories","connections",
+  "factions","notable_characters","members","allies","enemies","characters","locations","involves"]);
+const LINK_KEYS = new Set(["origin","affiliations","stories","connections","factions",
+  "notable_characters","parent_location","base","leader","members","allies","enemies",
+  "characters","locations","involves","story","branched_from"]);
+const BOOL_KEYS = new Set(["canon","private"]);
+const CHOICES = {
+  status: ["seed","sketched","developed","locked","idea","outlined","drafting","done","abandoned","draft","revised","final"],
+  universe: ["main timeline","alternate universe"],
+  story_type: ["main story","side story"],
+};
+
+const TEMPLATES = {
+  character: { dir: "Characters", fm:
+`name:
+aliases: []
+status: seed
+created: {{today}}
+updated: {{today}}
+tags: []
+color:
+pronouns:
+species:
+age:
+occupation:
+born:
+died:
+origin:
+affiliations: []
+stories: []
+art_folder:
+main_ref:`, body:
+`# {{name}}
+
+> One-sentence hook.
+
+## Summary
+
+## Appearance
+
+## Personality
+
+## Backstory
+
+## Relationships
+
+| Person | Relation | Notes |
+|---|---|---|
+| | | |
+
+## Abilities / Skills
+
+## Story Appearances
+
+## Open Questions
+
+- [ ]
+
+## Scratch
+` },
+  location: { dir: "World/Locations", fm:
+`name:
+type:
+status: seed
+created: {{today}}
+updated: {{today}}
+tags: []
+color:
+parent_location:
+region:
+connections: []
+factions: []
+notable_characters: []`, body:
+`# {{name}}
+
+## Summary
+
+## Feel
+
+## History
+
+## Who Lives Here
+
+## Story Hooks
+
+## Open Questions
+
+- [ ]
+
+## Scratch
+` },
+  faction: { dir: "World/Factions", fm:
+`name:
+aliases: []
+type:
+status: seed
+created: {{today}}
+updated: {{today}}
+tags: []
+color:
+base:
+leader:
+members: []
+allies: []
+enemies: []`, body:
+`# {{name}}
+
+## What They Want
+
+## How They Operate
+
+## History
+
+## Members
+
+| Person | Rank / Role | Loyalty |
+|---|---|---|
+| | | |
+
+## Open Questions
+
+- [ ]
+
+## Scratch
+` },
+  story: { dir: "Stories", fm:
+`name:
+status: idea
+canon: true
+universe: main timeline
+story_type: main story
+created: {{today}}
+updated: {{today}}
+tags: []
+color:
+timeline_position:
+characters: []
+locations: []
+manuscript_folder:
+branched_from:
+branch_point:`, body:
+`# {{name}}
+
+## Premise
+
+## Cast
+
+| Character | Role in this story | Arc |
+|---|---|---|
+| | | |
+
+## Outline
+
+## Notes
+
+## Open Questions
+
+- [ ]
+` },
+  chapter: { dir: "Stories", fm:
+`story:
+section:
+section_order:
+chapter:
+title:
+status: draft
+word_count:
+created: {{today}}
+updated: {{today}}`, body:
+`# {{name}}
+
+Prose goes here.
+
+## Notes
+` },
+  event: { dir: "Events", fm:
+`name:
+status: seed
+created: {{today}}
+updated: {{today}}
+tags: []
+color:
+date:
+era:
+involves: []`, body:
+`# {{name}}
+
+> One line - what happened.
+
+## What Happened
+
+## Open Questions
+
+- [ ]
+` },
+};
+
+const today = () => new Date().toISOString().slice(0, 10);
+const toast = (m) => {
+  const t = $("#toast"); t.textContent = m; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2200);
+};
+
+/* --------------------------------------------------------------- indexing */
+function reindex() {
+  S.index = [];
+  S.byName = new Map();
+  for (const [path, f] of S.files) {
+    const { fm, body } = splitFrontmatter(f.content);
+    const parsed = parseFrontmatter(fm);
+    const v = parsed.values;
+    const name = String(v.name || v.title || titleFromPath(path));
+    const e = {
+      path, name, parsed, body,
+      type: typeOf(path),
+      status: v.status ? String(v.status) : "",
+      tags: Array.isArray(v.tags) ? v.tags : (v.tags ? [String(v.tags)] : []),
+      color: v.color ? String(v.color) : "",
+      aliases: Array.isArray(v.aliases) ? v.aliases : [],
+      deleted: !!f.deleted_at,
+    };
+    S.index.push(e);
+    if (!e.deleted) {
+      S.byName.set(name.toLowerCase(), path);
+      for (const a of e.aliases) if (a) S.byName.set(String(a).toLowerCase(), path);
+      S.byName.set(titleFromPath(path).toLowerCase(), path);
+    }
+  }
+  S.index.sort((a, b) => a.name.localeCompare(b.name));
+}
+const entryFor = (path) => S.index.find((e) => e.path === path);
+
+function resolveLink(target) {
+  const t = String(target).trim().toLowerCase();
+  const path = S.byName.get(t);
+  if (path) return { path };
+  return null;
+}
+function resolveImg(target) {
+  const t = String(target).trim();
+  if (/^https?:/i.test(t)) return { img: t };
+  return { img: "./" + t.replace(/^\.?\//, "").replace(/^Art\//i, "art/") };
+}
+const resolveAll = (t) => resolveLink(t) || null;
+
+/* ---------------------------------------------------------------- sidebar */
+function renderSidebar() {
+  const q = $("#q").value.trim().toLowerCase();
+  const side = $("#side");
+  const groups = new Map();
+  for (const e of S.index) {
+    if (e.deleted) continue;
+    if (q) {
+      const hay = (e.name + " " + e.tags.join(" ") + " " + e.body).toLowerCase();
+      if (!hay.includes(q)) continue;
+    }
+    if (!groups.has(e.type)) groups.set(e.type, []);
+    groups.get(e.type).push(e);
+  }
+  const trashed = S.index.filter((e) => e.deleted);
+  let html = "";
+  for (const s of SECTIONS) {
+    const items = groups.get(s.key) || [];
+    if (!items.length && q) continue;
+    const closed = S.closed.has(s.key) ? " closed" : "";
+    html += `<div class="sec${closed}" data-sec="${s.key}">
+      <h2><span class="caret">▾</span><span class="dot" style="background:${s.color}"></span>${s.label}<span class="n">${items.length}</span></h2>
+      <ul>` +
+      (items.length
+        ? items.map((e) => `<li><a href="#" data-path="${escapeHtml(e.path)}"${e.path === S.current ? ' class="on"' : ""}>${escapeHtml(e.name)}${e.status ? `<span class="st">${escapeHtml(e.status)}</span>` : ""}</a></li>`).join("")
+        : `<li class="empty">nothing yet</li>`) +
+      `</ul></div>`;
+  }
+  if (trashed.length) {
+    const closed = S.closed.has("trash") ? " closed" : "";
+    html += `<div class="sec${closed}" data-sec="trash">
+      <h2><span class="caret">▾</span><span class="dot" style="background:var(--faint)"></span>Trash<span class="n">${trashed.length}</span></h2>
+      <ul>` + trashed.map((e) =>
+        `<li><a href="#" data-path="${escapeHtml(e.path)}"${e.path === S.current ? ' class="on"' : ""}>${escapeHtml(e.name)}</a></li>`
+      ).join("") + `</ul></div>`;
+  }
+  side.innerHTML = html || `<div class="empty">no matches</div>`;
+}
+
+/* ------------------------------------------------------------------- read */
+function factsHtml(e) {
+  const v = e.parsed.values;
+  const skip = new Set(["name","title","color","art_folder","main_ref"]);
+  const rows = [];
+  for (const k of e.parsed.order) {
+    if (skip.has(k)) continue;
+    const val = v[k];
+    if (val === "" || val === null || val === undefined) continue;
+    if (Array.isArray(val) && !val.length) continue;
+    const txt = Array.isArray(val) ? val.join(", ") : String(val);
+    rows.push(`<dt>${escapeHtml(k.replace(/_/g, " "))}</dt><dd>${renderInline(txt, resolveAll)}</dd>`);
+  }
+  return rows.length ? `<div class="facts"><dl>${rows.join("")}</dl></div>` : "";
+}
+
+function renderEntry() {
+  const main = $("#main");
+  if (!S.current) {
+    main.innerHTML = `<div class="wrap"><div class="ehead"><h1>Codex</h1></div>
+      <p class="sub">${S.index.filter((e)=>!e.deleted).length} entries. Pick one on the left, or make a new one.</p>
+      <p class="hint">Everything you change here saves straight to the database.</p></div>`;
+    return;
+  }
+  const e = entryFor(S.current);
+  if (!e) { S.current = null; return renderEntry(); }
+  if (S.editing) return renderEditor(e);
+
+  const v = e.parsed.values;
+  const sec = SEC[e.type] || SEC["world-index"];
+  const ref = v.main_ref ? resolveImg(String(v.main_ref)) : null;
+  const bodyNoH1 = e.body.replace(/^\s*#\s+.*\n?/, "");
+  main.innerHTML = `<div class="wrap">
+    <div class="ehead">
+      <h1>${escapeHtml(e.name)}</h1>
+      <div class="badges">
+        <span class="badge t" style="border-color:${e.color || sec.color};color:${e.color || sec.color}">${sec.label.replace(/s$/, "")}</span>
+        ${e.status ? `<span class="badge">${escapeHtml(e.status)}</span>` : ""}
+        ${e.tags.map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("")}
+        ${e.deleted ? `<span class="badge" style="color:var(--bad);border-color:var(--bad)">in trash</span>` : ""}
+      </div>
+    </div>
+    ${ref ? `<div class="portrait"><img src="${escapeHtml(ref.img)}" alt="" onerror="this.parentNode.style.display='none'"></div>` : ""}
+    ${factsHtml(e)}
+    <div class="doc">${renderMarkdown(bodyNoH1, resolveAll)}</div>
+    <div style="height:20px"></div>
+    <div class="badges">
+      ${e.deleted
+        ? `<button class="btn p" id="restoreBtn">Restore</button>
+           <button class="btn danger" id="purgeBtn">Delete forever</button>`
+        : `<button class="btn p" id="editBtn">Edit</button>
+           <button class="btn danger" id="delBtn">Move to trash</button>`}
+      <span class="hint">${escapeHtml(e.path)}</span>
+    </div>
+  </div>`;
+
+  const on = (id, fn) => { const el = $("#" + id); if (el) el.onclick = fn; };
+  on("editBtn", () => startEdit(e));
+  on("delBtn", () => setDeleted(e.path, true));
+  on("restoreBtn", () => setDeleted(e.path, false));
+  on("purgeBtn", () => purge(e.path));
+  $$("a.wl", main).forEach((a) => a.onclick = (ev) => { ev.preventDefault(); open(a.dataset.path); });
+}
+
+/* ------------------------------------------------------------------- edit */
+function startEdit(e) {
+  S.editing = true;
+  S.rawMode = false;
+  S.dirty = false;
+  const values = {};
+  for (const k of e.parsed.order) values[k] = e.parsed.values[k];
+  S.draft = { values, body: e.body, raw: null };
+  renderEntry();
+}
+
+function fieldHtml(key, val) {
+  const label = `<label>${escapeHtml(key.replace(/_/g, " "))}</label>`;
+  if (LIST_KEYS.has(key)) {
+    const arr = Array.isArray(val) ? val : (val ? [String(val)] : []);
+    return `<div class="field" data-key="${key}" data-kind="list">${label}
+      <div class="chips">${arr.map((x, i) =>
+        `<span class="chip"><b>${escapeHtml(x)}</b><button data-i="${i}" title="remove">×</button></span>`).join("")}
+        <input placeholder="add…" data-ac="${LINK_KEYS.has(key) ? "link" : key === "tags" ? "tag" : ""}">
+      </div></div>`;
+  }
+  if (BOOL_KEYS.has(key)) {
+    return `<div class="field" data-key="${key}" data-kind="bool">${label}
+      <select class="inp"><option value="">(blank)</option>
+        <option value="true"${val === true ? " selected" : ""}>true</option>
+        <option value="false"${val === false ? " selected" : ""}>false</option></select></div>`;
+  }
+  if (key === "color") {
+    return `<div class="field" data-key="color" data-kind="text">${label}
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="inp" value="${escapeHtml(val || "")}" placeholder="#rrggbb" style="flex:1">
+        <input type="color" value="${/^#[0-9a-f]{6}$/i.test(val || "") ? val : "#a78bdb"}"
+          style="width:42px;height:36px;background:none;border:1px solid var(--line);border-radius:8px">
+      </div></div>`;
+  }
+  const ac = LINK_KEYS.has(key) ? ' data-ac="link"' : (key in CHOICES ? ` data-ac="choice:${key}"` : "");
+  return `<div class="field" data-key="${key}" data-kind="text">${label}
+    <input class="inp" value="${escapeHtml(val === null || val === undefined ? "" : String(val))}"${ac}></div>`;
+}
+
+function renderEditor(e) {
+  const d = S.draft;
+  const main = $("#main");
+  if (S.rawMode) {
+    const raw = d.raw !== null ? d.raw : buildFile(e.parsed, d.values, d.body);
+    main.innerHTML = `<div class="wrap">
+      <div class="ehead"><h1>${escapeHtml(e.name)}</h1>
+        <div class="badges"><span class="badge">raw markdown</span><span class="hint">${escapeHtml(e.path)}</span></div></div>
+      <textarea id="rawTa" class="inp" rows="30">${escapeHtml(raw)}</textarea>
+    </div>` + editBar();
+    const ta = $("#rawTa");
+    ta.oninput = () => { d.raw = ta.value; S.dirty = true; markDirty(); };
+    wireBar(e);
+    return;
+  }
+  const keys = [...new Set([...e.parsed.order, ...Object.keys(d.values)])];
+  main.innerHTML = `<div class="wrap">
+    <div class="ehead"><h1>${escapeHtml(e.name)}</h1>
+      <div class="badges"><span class="badge">editing</span><span class="hint">${escapeHtml(e.path)}</span></div></div>
+    <div id="fields">${keys.map((k) => fieldHtml(k, d.values[k])).join("")}</div>
+    <div class="field"><label>body</label>
+      <textarea id="bodyTa" class="inp" rows="22">${escapeHtml(d.body)}</textarea></div>
+  </div>` + editBar();
+
+  $("#bodyTa").oninput = (ev) => { d.body = ev.target.value; S.dirty = true; markDirty(); };
+  $$("#fields .field").forEach((f) => wireField(f));
+  wireBar(e);
+}
+
+function editBar() {
+  return `<div class="editbar">
+    <button class="btn p" id="saveBtn">Save</button>
+    <button class="btn" id="cancelBtn">Cancel</button>
+    <button class="btn sm" id="rawBtn">${S.rawMode ? "Form" : "Raw"}</button>
+    <span class="sp"></span>
+    <span class="hint" id="dirty"></span>
+  </div>`;
+}
+function markDirty() { const d = $("#dirty"); if (d) d.textContent = S.dirty ? "unsaved" : ""; }
+
+function wireBar(e) {
+  $("#saveBtn").onclick = () => save(e);
+  $("#cancelBtn").onclick = () => {
+    if (S.dirty && !confirm("Throw away unsaved changes?")) return;
+    S.editing = false; S.draft = null; S.dirty = false; renderEntry();
+  };
+  $("#rawBtn").onclick = () => {
+    if (!S.rawMode) S.draft.raw = buildFile(e.parsed, S.draft.values, S.draft.body);
+    else if (S.draft.raw !== null) {
+      const { fm, body } = splitFrontmatter(S.draft.raw);
+      const p = parseFrontmatter(fm);
+      S.draft.values = { ...p.values };
+      S.draft.body = body;
+      e.parsed = p;
+      S.draft.raw = null;
+    }
+    S.rawMode = !S.rawMode;
+    renderEntry();
+  };
+  markDirty();
+}
+
+function wireField(f) {
+  const key = f.dataset.key, kind = f.dataset.kind, d = S.draft;
+  if (kind === "list") {
+    const box = $(".chips", f);
+    const redraw = () => {
+      const arr = d.values[key] || [];
+      box.innerHTML = arr.map((x, i) =>
+        `<span class="chip"><b>${escapeHtml(x)}</b><button data-i="${i}">×</button></span>`).join("") +
+        `<input placeholder="add…" data-ac="${LINK_KEYS.has(key) ? "link" : key === "tags" ? "tag" : ""}">`;
+      wireList();
+    };
+    const wireList = () => {
+      $$(".chip button", box).forEach((b) => b.onclick = () => {
+        d.values[key] = (d.values[key] || []).filter((_, i) => i !== +b.dataset.i);
+        S.dirty = true; markDirty(); redraw();
+      });
+      const inp = $("input", box);
+      attachAutocomplete(inp, inp.dataset.ac, (picked) => {
+        const arr = Array.isArray(d.values[key]) ? [...d.values[key]] : [];
+        const val = LINK_KEYS.has(key) && !/^\[\[/.test(picked) ? `[[${picked}]]` : picked;
+        if (val && !arr.includes(val)) arr.push(val);
+        d.values[key] = arr; S.dirty = true; markDirty(); redraw();
+        setTimeout(() => $("input", box).focus(), 0);
+      });
+      inp.onkeydown = (ev) => {
+        if (ev.key === "Enter" && !$("#pop").classList.contains("on")) {
+          ev.preventDefault();
+          const raw = inp.value.trim();
+          if (!raw) return;
+          const arr = Array.isArray(d.values[key]) ? [...d.values[key]] : [];
+          const val = LINK_KEYS.has(key) && !/^\[\[/.test(raw) ? `[[${raw}]]` : raw;
+          if (!arr.includes(val)) arr.push(val);
+          d.values[key] = arr; S.dirty = true; markDirty(); redraw();
+          setTimeout(() => $("input", box).focus(), 0);
+        } else if (ev.key === "Backspace" && inp.value === "") {
+          const arr = [...(d.values[key] || [])]; arr.pop();
+          d.values[key] = arr; S.dirty = true; markDirty(); redraw();
+          setTimeout(() => $("input", box).focus(), 0);
+        }
+      };
+    };
+    wireList();
+    return;
+  }
+  if (kind === "bool") {
+    const sel = $("select", f);
+    sel.onchange = () => {
+      d.values[key] = sel.value === "" ? "" : sel.value === "true";
+      S.dirty = true; markDirty();
+    };
+    return;
+  }
+  const inp = $("input.inp", f);
+  inp.oninput = () => { d.values[key] = inp.value; S.dirty = true; markDirty(); };
+  const swatch = $('input[type=color]', f);
+  if (swatch) swatch.oninput = () => { inp.value = swatch.value; d.values[key] = swatch.value; S.dirty = true; markDirty(); };
+  attachAutocomplete(inp, inp.dataset.ac, (picked) => {
+    const val = inp.dataset.ac === "link" && !/^\[\[/.test(picked) ? `[[${picked}]]` : picked;
+    inp.value = val; d.values[key] = val; S.dirty = true; markDirty();
+  });
+}
+
+/* --------------------------------------------------------- autocomplete */
+let popTarget = null, popItems = [], popSel = 0, popPick = null;
+function candidates(kind) {
+  if (kind === "link") {
+    const out = [];
+    for (const e of S.index) {
+      if (e.deleted) continue;
+      out.push({ label: e.name, hint: SEC[e.type] ? SEC[e.type].label : e.type });
+      for (const a of e.aliases) if (a) out.push({ label: String(a), hint: "alias of " + e.name });
+    }
+    return out;
+  }
+  if (kind === "tag") {
+    const seen = new Map();
+    for (const e of S.index) for (const t of e.tags) {
+      const k = String(t).toLowerCase();
+      seen.set(k, (seen.get(k) || 0) + 1);
+    }
+    return [...seen.entries()].sort((a, b) => b[1] - a[1])
+      .map(([t, n]) => ({ label: t, hint: n + " use" + (n > 1 ? "s" : "") }));
+  }
+  if (kind && kind.startsWith("choice:")) {
+    return (CHOICES[kind.slice(7)] || []).map((c) => ({ label: c, hint: "" }));
+  }
+  return [];
+}
+function attachAutocomplete(inp, kind, onPick) {
+  if (!inp || !kind) return;
+  const show = () => {
+    const all = candidates(kind);
+    const q = inp.value.replace(/^\[\[|\]\]$/g, "").trim().toLowerCase();
+    const seen = new Set();
+    popItems = all.filter((c) => {
+      const k = c.label.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return !q || k.includes(q);
+    }).slice(0, 60);
+    if (!popItems.length) return hidePop();
+    popTarget = inp; popPick = onPick; popSel = 0;
+    const pop = $("#pop");
+    pop.innerHTML = popItems.map((c, i) =>
+      `<div data-i="${i}"${i === 0 ? ' class="sel"' : ""}>${escapeHtml(c.label)}${c.hint ? `<small>${escapeHtml(c.hint)}</small>` : ""}</div>`).join("");
+    positionPop();
+    pop.classList.add("on");
+    $$("#pop div").forEach((d) => {
+      d.onmousedown = (ev) => { ev.preventDefault(); choose(+d.dataset.i); };
+    });
+  };
+  inp.addEventListener("focus", show);
+  inp.addEventListener("click", show);
+  inp.addEventListener("input", show);
+  inp.addEventListener("keydown", (ev) => {
+    const pop = $("#pop");
+    if (!pop.classList.contains("on")) return;
+    if (ev.key === "ArrowDown") { ev.preventDefault(); moveSel(1); }
+    else if (ev.key === "ArrowUp") { ev.preventDefault(); moveSel(-1); }
+    else if (ev.key === "Enter") {
+      // Stop the field's own Enter handler from also adding the raw typed text.
+      ev.preventDefault(); ev.stopImmediatePropagation(); choose(popSel);
+    }
+    else if (ev.key === "Escape") { hidePop(); }
+  });
+  // Only close on blur if this input still owns the popup - otherwise moving
+  // focus from one field to the next closes the menu the new field just opened.
+  inp.addEventListener("blur", () => setTimeout(() => { if (popTarget === inp) hidePop(); }, 150));
+}
+function moveSel(d) {
+  const items = $$("#pop div");
+  if (!items.length) return;
+  items[popSel] && items[popSel].classList.remove("sel");
+  popSel = (popSel + d + items.length) % items.length;
+  items[popSel].classList.add("sel");
+  items[popSel].scrollIntoView({ block: "nearest" });
+}
+function choose(i) {
+  const c = popItems[i];
+  const pick = popPick;
+  hidePop();
+  if (c && pick) pick(c.label);
+}
+function hidePop() { $("#pop").classList.remove("on"); popItems = []; popTarget = null; popPick = null; }
+
+/* The menu follows its input rather than closing. Scrolling a long form - or
+   scrolling inside the menu itself - used to dismiss it, which made picking a
+   tag from a long list nearly impossible. */
+function positionPop() {
+  if (!popTarget) return;
+  const pop = $("#pop");
+  const r = popTarget.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > window.innerHeight) return hidePop();
+  const below = window.innerHeight - r.bottom;
+  const maxH = Math.max(140, Math.min(230, below - 12));
+  const flip = below < 160 && r.top > below;
+  pop.style.maxHeight = (flip ? Math.min(230, r.top - 12) : maxH) + "px";
+  pop.style.left = Math.min(r.left, window.innerWidth - 220) + "px";
+  pop.style.top = flip ? "" : (r.bottom + 4) + "px";
+  pop.style.bottom = flip ? (window.innerHeight - r.top + 4) + "px" : "";
+  pop.style.position = "fixed";
+  pop.style.minWidth = Math.max(200, r.width) + "px";
+}
+document.addEventListener("scroll", () => positionPop(), true);
+window.addEventListener("resize", () => positionPop());
+
+/* ------------------------------------------------------------------- save */
+async function save(e) {
+  const d = S.draft;
+  let content;
+  if (S.rawMode && d.raw !== null) content = d.raw;
+  else {
+    const vals = { ...d.values, updated: today() };
+    content = buildFile(e.parsed, vals, d.body);
+  }
+  const { fm } = splitFrontmatter(content);
+  const p = parseFrontmatter(fm);
+  const newName = String(p.values.name || p.values.title || titleFromPath(e.path));
+  const oldBase = titleFromPath(e.path);
+
+  let newPath = e.path;
+  if (newName !== oldBase && newName.trim() && !/[\\/:*?"<>|]/.test(newName)) {
+    if (confirm(`Rename the file to "${newName}.md" and repoint links to it?`)) {
+      newPath = e.path.replace(/[^/]+\.md$/, newName + ".md");
+      if (S.files.has(newPath) && newPath !== e.path) {
+        alert("A file called " + newPath + " already exists. Keeping the old filename.");
+        newPath = e.path;
+      }
+    }
+  }
+
+  const btn = $("#saveBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
+  try {
+    await upsertFile(newPath, content);
+    if (newPath !== e.path) {
+      await repointLinks(oldBase, newName);
+      await removeFile(e.path);
+      S.files.delete(e.path);
+    }
+    S.files.set(newPath, { content, deleted_at: null });
+    reindex();
+    S.current = newPath;
+    S.editing = false; S.draft = null; S.dirty = false;
+    renderSidebar(); renderEntry();
+    toast("Saved");
+  } catch (err) {
+    alert("Save failed: " + (err.message || err));
+    btn.disabled = false; btn.textContent = "Save";
+  }
+}
+
+async function upsertFile(path, content) {
+  const row = { world_id: S.worldId, path, content, updated_at: new Date().toISOString(), deleted_at: null };
+  let r = await sb.from("files").upsert(row, { onConflict: "world_id,path" });
+  if (r.error) throw r.error;
+  const er = entryRow(S.worldId, path, content);
+  er.deleted_at = null;
+  r = await sb.from("entries").upsert(er, { onConflict: "world_id,path" });
+  if (r.error) throw r.error;
+}
+async function removeFile(path) {
+  let r = await sb.from("files").delete().eq("world_id", S.worldId).eq("path", path);
+  if (r.error) throw r.error;
+}
+async function setDeleted(path, on) {
+  if (on && !confirm("Move this to the trash? You can restore it later.")) return;
+  const ts = on ? new Date().toISOString() : null;
+  let r = await sb.from("files").update({ deleted_at: ts }).eq("world_id", S.worldId).eq("path", path);
+  if (r.error) return alert(r.error.message);
+  await sb.from("entries").update({ deleted_at: ts }).eq("world_id", S.worldId).eq("path", path);
+  const f = S.files.get(path); if (f) f.deleted_at = ts;
+  reindex(); renderSidebar(); renderEntry();
+  toast(on ? "Moved to trash" : "Restored");
+}
+async function purge(path) {
+  if (!confirm("Delete " + path + " permanently? This cannot be undone.")) return;
+  try { await removeFile(path); } catch (err) { return alert(err.message); }
+  S.files.delete(path);
+  reindex(); S.current = null; renderSidebar(); renderEntry();
+  toast("Deleted");
+}
+
+/* Rename support: rewrite [[Old Name]] to [[New Name]] everywhere. */
+async function repointLinks(oldName, newName) {
+  const re = new RegExp("\\[\\[" + oldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\|[^\\]]*)?\\]\\]", "g");
+  for (const [path, f] of S.files) {
+    if (!re.test(f.content)) { re.lastIndex = 0; continue; }
+    re.lastIndex = 0;
+    const updated = f.content.replace(re, (m, label) => `[[${newName}${label || ""}]]`);
+    await upsertFile(path, updated);
+    S.files.set(path, { content: updated, deleted_at: f.deleted_at });
+  }
+}
+
+/* -------------------------------------------------------------------- new */
+function newEntry() {
+  const opts = Object.keys(TEMPLATES)
+    .map((k) => `<option value="${k}">${SEC[k] ? SEC[k].label.replace(/s$/, "") : k}</option>`).join("");
+  const stories = S.index.filter((e) => e.type === "story");
+  $("#modal").innerHTML = `<div class="card">
+    <h1>New entry</h1>
+    <div class="field"><label>type</label><select id="nType" class="inp">${opts}</select></div>
+    <div class="field"><label>name</label><input id="nName" class="inp" placeholder="Name"></div>
+    <div class="field" id="nStoryWrap" style="display:none"><label>story</label>
+      <select id="nStory" class="inp">${stories.map((s) => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("")}</select></div>
+    <div class="badges"><button class="btn p" id="nGo">Create</button>
+      <button class="btn" id="nCancel">Cancel</button></div>
+    <div class="msg" id="nMsg"></div>
+  </div>`;
+  $("#modal").classList.add("on");
+  const sync = () => { $("#nStoryWrap").style.display = $("#nType").value === "chapter" ? "" : "none"; };
+  $("#nType").onchange = sync; sync();
+  $("#nCancel").onclick = () => $("#modal").classList.remove("on");
+  $("#nName").focus();
+  $("#nGo").onclick = async () => {
+    const type = $("#nType").value;
+    const name = $("#nName").value.trim();
+    if (!name) return ($("#nMsg").textContent = "Give it a name.");
+    if (/[\\/:*?"<>|]/.test(name)) return ($("#nMsg").textContent = "No slashes or : * ? \" < > | in the name.");
+    const t = TEMPLATES[type];
+    let dir = t.dir;
+    if (type === "chapter") {
+      const story = $("#nStory").value;
+      if (!story) return ($("#nMsg").textContent = "Make a story first, chapters live inside one.");
+      dir = "Stories/" + story;
+    }
+    const path = dir + "/" + name + ".md";
+    if (S.files.has(path)) return ($("#nMsg").textContent = "That file already exists.");
+    let fm = t.fm.replace(/\{\{today\}\}/g, today());
+    if (type === "chapter") {
+      fm = fm.replace(/^story:.*$/m, `story: "[[${$("#nStory").value}]]"`)
+             .replace(/^title:.*$/m, `title: ${name}`);
+    } else {
+      fm = fm.replace(/^name:.*$/m, `name: ${name}`);
+    }
+    const content = "---\n" + fm + "\n---\n\n" + t.body.replace(/\{\{name\}\}/g, name);
+    try {
+      await upsertFile(path, content);
+    } catch (err) { return ($("#nMsg").textContent = "Failed: " + (err.message || err)); }
+    S.files.set(path, { content, deleted_at: null });
+    reindex();
+    $("#modal").classList.remove("on");
+    open(path);
+    toast("Created");
+  };
+}
+
+/* ------------------------------------------------------------------- nav */
+function open(path) {
+  if (S.editing && S.dirty && !confirm("Leave without saving?")) return;
+  S.editing = false; S.draft = null; S.dirty = false;
+  S.current = path;
+  location.hash = "#" + encodeURIComponent(path);
+  if (window.innerWidth <= 820) closeDrawer();
+  renderSidebar(); renderEntry();
+  $("#main").scrollTop = 0;
+}
+function closeDrawer() { $("#side").classList.remove("open"); $("#scrim").classList.remove("on"); }
+
+/* ------------------------------------------------------------------ boot */
+async function loadWorld() {
+  let { data: worlds, error } = await sb.from("worlds").select("id,slug").eq("slug", WORLD_SLUG);
+  if (error) throw error;
+  if (!worlds || !worlds.length) {
+    const r = await sb.rpc("claim_world", { p_slug: WORLD_SLUG });
+    if (r.error) throw r.error;
+    if (!r.data) throw new Error("This world already belongs to another account.");
+    S.worldId = r.data;
+  } else {
+    S.worldId = worlds[0].id;
+  }
+  const { data: files, error: fe } = await sb
+    .from("files").select("path,content,deleted_at").eq("world_id", S.worldId);
+  if (fe) throw fe;
+  S.files = new Map(files.map((f) => [f.path, { content: f.content, deleted_at: f.deleted_at }]));
+  reindex();
+}
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $("#login").classList.add("on"); $("#shell").classList.remove("on"); return; }
+  $("#login").classList.remove("on");
+  $("#shell").classList.add("on");
+  try {
+    await loadWorld();
+  } catch (err) {
+    $("#main").innerHTML = `<div class="wrap"><h1>Could not load</h1>
+      <p class="sub">${escapeHtml(err.message || String(err))}</p></div>`;
+    return;
+  }
+  const hash = decodeURIComponent((location.hash || "").slice(1));
+  S.current = S.files.has(hash) ? hash : null;
+  renderSidebar();
+  renderEntry();
+}
+
+/* -------------------------------------------------------------- wiring */
+$("#sendLink").onclick = async () => {
+  const email = $("#email").value.trim();
+  const msg = $("#loginMsg");
+  if (!email) { msg.className = "msg err"; msg.textContent = "Enter your email."; return; }
+  msg.className = "msg"; msg.textContent = "Sending…";
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: location.origin + location.pathname },
+  });
+  if (error) { msg.className = "msg err"; msg.textContent = error.message; return; }
+  msg.className = "msg ok";
+  msg.textContent = "Check your email and click the link. You can close this tab.";
+};
+$("#email").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#sendLink").click(); });
+
+$("#outBtn").onclick = async () => {
+  if (S.dirty && !confirm("You have unsaved changes. Sign out anyway?")) return;
+  await sb.auth.signOut();
+  location.reload();
+};
+$("#newBtn").onclick = newEntry;
+$("#themeBtn").onclick = () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem("cdb-theme", next);
+};
+$("#burger").onclick = () => {
+  $("#side").classList.toggle("open");
+  $("#scrim").classList.toggle("on", $("#side").classList.contains("open"));
+};
+$("#scrim").onclick = closeDrawer;
+$("#q").addEventListener("input", renderSidebar);
+$("#side").addEventListener("click", (ev) => {
+  const h = ev.target.closest("h2");
+  if (h) {
+    const sec = h.parentNode.dataset.sec;
+    h.parentNode.classList.toggle("closed");
+    if (S.closed.has(sec)) S.closed.delete(sec); else S.closed.add(sec);
+    localStorage.setItem("cdb-closed", JSON.stringify([...S.closed]));
+    return;
+  }
+  const a = ev.target.closest("a[data-path]");
+  if (a) { ev.preventDefault(); open(a.dataset.path); }
+});
+document.addEventListener("keydown", (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "s") {
+    if (S.editing) { ev.preventDefault(); const b = $("#saveBtn"); if (b) b.click(); }
+  }
+  if (ev.key === "Escape") { $("#modal").classList.remove("on"); hidePop(); }
+});
+window.addEventListener("beforeunload", (ev) => {
+  if (S.dirty) { ev.preventDefault(); ev.returnValue = ""; }
+});
+document.documentElement.dataset.theme = localStorage.getItem("cdb-theme") || "dark";
+sb.auth.onAuthStateChange((evt) => { if (evt === "SIGNED_IN" || evt === "SIGNED_OUT") boot(); });
+boot();
+</script>
+</body>
+</html>
