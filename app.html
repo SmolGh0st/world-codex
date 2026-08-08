@@ -122,7 +122,7 @@ html[data-theme=light] .btn.p{color:#fff}
 .doc h3{font-family:Cinzel,serif;font-size:15.5px;margin:18px 0 4px}
 .doc p{margin:0 0 12px}
 .doc blockquote{
-  margin:0 0 14px;padding:2px 0 2px 14px;border-left:3px solid var(--accent);
+  margin:0 0 14px;padding:2px 0 2px 14px;border-left:2px solid var(--accent);
   color:var(--dim);font-style:italic;
 }
 .doc blockquote p{margin:0 0 6px}
@@ -237,6 +237,22 @@ textarea.inp{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:
   .ehead h1{font-size:25px}
   #scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:45;display:none}
   #scrim.on{display:block}
+}
+
+/* Browser surfaces, themed from the palette instead of shipped as defaults. */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+::selection{background:var(--accent);color:var(--bg)}
+:where(input,textarea){caret-color:var(--accent)}
+html{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+:where(a,button,select){
+  transition:background-color .16s cubic-bezier(.32,.72,0,1),
+             border-color .16s cubic-bezier(.32,.72,0,1),
+             color .16s cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
 }
 </style>
 </head>

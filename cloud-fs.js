@@ -577,7 +577,10 @@
     strip.id = "cdbStrip";
     strip.setAttribute("aria-label", "Tools");
     strip.style.cssText = "display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;" +
-      "padding:10px 14px;scrollbar-width:none;";
+      "padding:10px 14px;scrollbar-width:none;" +
+      // fade the right edge so a clipped pill reads as "more this way", not a bug
+      "mask-image:linear-gradient(90deg,#000 90%,transparent);" +
+      "-webkit-mask-image:linear-gradient(90deg,#000 90%,transparent);";
     strip.innerHTML = TOOLS.map(([label, href]) =>
       '<a href="' + href + '" style="flex:0 0 auto;padding:7px 14px;border-radius:99px;' +
       "border:1px solid rgba(140,125,180,.45);color:inherit;text-decoration:none;" +
@@ -653,6 +656,7 @@
       banner('Not signed in. <a style="color:#fff" href="' + APP_URL + '?next=' + next + '">Sign in</a> to load your world.', "err");
       restyleAuthUI(false);
       rewriteText();
+      finishLayer();
       return;
     }
     try {
@@ -682,6 +686,36 @@
     fixBrandLink();
     mobileRepairs();
     showTutorial();
+    finishLayer();
+  }
+
+  /* ------------------------------------------------------------ finish layer
+     The browser surfaces no tool drew for itself: focus rings, text selection,
+     the caret, scrollbars, and interaction easing. Everything derives from the
+     host tool's own CSS variables so each theme keeps its own colour; :where()
+     keeps specificity at zero so any rule a tool already has wins over this. */
+  function finishLayer() {
+    if (document.getElementById("cdbFinish")) return;
+    const s = document.createElement("style");
+    s.id = "cdbFinish";
+    s.textContent = `
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--accent,#8b7ad6);outline-offset:2px;
+}
+::selection{background:var(--accent-soft,rgba(150,125,210,.30))}
+:where(input,textarea){caret-color:var(--accent,#8b7ad6)}
+html{scrollbar-width:thin;scrollbar-color:var(--line,#b9b19f) transparent}
+:where(a,button,select,summary){
+  transition:background-color .16s cubic-bezier(.32,.72,0,1),
+             border-color .16s cubic-bezier(.32,.72,0,1),
+             color .16s cubic-bezier(.32,.72,0,1),
+             box-shadow .16s cubic-bezier(.32,.72,0,1);
+}
+.stat b{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}`;
+    document.head.appendChild(s);
   }
 
   if (document.readyState === "loading") {
