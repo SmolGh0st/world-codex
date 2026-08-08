@@ -68,7 +68,11 @@ body.m-nav .m-scrim{display:block}
 }
 body.m-read #view{transform:none}
 #backFab{display:none}
-body.m-read #backFab{display:block}
+body.m-read #backFab{
+  display:block;
+  background:#ff5a36;color:#1a1108;border-color:transparent;
+  font-weight:800;box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.2) inset;
+}
 `);
     const view = document.getElementById("view");
     const side = document.getElementById("side");
@@ -107,11 +111,33 @@ body.m-read #backFab{display:block}
   padding-bottom:calc(80px + ${SAFE}) !important;
 }
 body.m-nav #sidebar{transform:none}
+#sidebar .m-newstory{
+  display:block;margin:10px 12px 6px;padding:10px 12px;border-radius:9px;
+  background:var(--accent,#5b9bd5);color:#12101a;font-weight:700;font-size:13px;
+  text-align:center;text-decoration:none;
+}
 `);
     const sb = document.getElementById("sidebar");
     const close = () => document.body.classList.remove("m-nav");
     scrim(close);
     fab("☰ Chapters", "left", () => document.body.classList.toggle("m-nav"));
+    // The drawer only ever offers "+ New chapter" per existing story - same
+    // as the desktop sidebar, there's no way to start a brand new one from
+    // here. Reuse the same link the desktop empty-state already points to,
+    // pinned above the story list. renderSidebar() wipes #sidebar on every
+    // render (picking a story, saving, etc.), so re-inject it each time.
+    if (sb) {
+      const injectNewStory = () => {
+        if (sb.querySelector(".m-newstory")) return;
+        const link = document.createElement("a");
+        link.className = "m-newstory";
+        link.href = "character-writer.html#type=story&mode=guided";
+        link.textContent = "+ New story";
+        sb.insertBefore(link, sb.firstChild);
+      };
+      injectNewStory();
+      new MutationObserver(injectNewStory).observe(sb, { childList: true });
+    }
     // Close the drawer when a pick actually loads into the editor - story
     // rows just expand their chapter list and should keep the drawer open.
     let picked = false;
