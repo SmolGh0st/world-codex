@@ -199,6 +199,8 @@
   }
   .sec h2:hover{background:var(--btn-hover);color:var(--ink-dim)}
   .sec h2 .n{font-weight:400;letter-spacing:0}
+  .sec h2 .n.chn{margin-left:-2px;opacity:.75;font-size:9.5px}
+  .sec h2 .n.chn::before{content:"· "}
   .sec h2 .arrow{flex:none;width:12px;font-size:10px;color:var(--ink-faint);transition:transform .12s}
   .sec h2.closed .arrow{transform:rotate(-90deg)}
   .sec h2 .dot2{flex:none;width:8px;height:8px;border-radius:50%}
@@ -757,8 +759,22 @@ function renderSide(){
     dot.style.background = sectionColor(label);
     const lbl = document.createElement("span"); lbl.textContent = label;
     const n = document.createElement("span"); n.className = "n";
-    n.textContent = bySection.get(label).length;
+    /* Stories mixes two kinds of entry: the story bibles themselves and
+       their chapters (isChapter). The header count should read as "how
+       many stories", not "how many rows" - chapters get their own small
+       badge alongside it instead of being folded into the same number. */
+    const secEntries = bySection.get(label);
+    const isStories = label === "Stories";
+    n.textContent = isStories ? secEntries.filter(e=>!e.isChapter).length : secEntries.length;
     h.append(ar, dot, lbl, n);
+    if(isStories){
+      const chapterCount = secEntries.filter(e=>e.isChapter).length;
+      if(chapterCount){
+        const cn = document.createElement("span"); cn.className = "n chn";
+        cn.textContent = chapterCount + (chapterCount === 1 ? " chapter" : " chapters");
+        h.append(cn);
+      }
+    }
     h.onclick = ()=>{
       if(S.closedSecs.has(label)) S.closedSecs.delete(label);
       else S.closedSecs.add(label);
@@ -1495,7 +1511,6 @@ const NAV_HOME = "../index.html";
   }, true);
 })();
 </script>
-
 <!-- cloud storage: makes Supabase look like the folder these tools expect -->
 <script src="/world-codex/config.js"></script>
 <script src="/world-codex/cloud-fs.js"></script>
